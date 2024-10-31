@@ -3,7 +3,9 @@ use crate::ai::service::tools::advisory_info::AdvisoryInfo;
 use crate::ai::service::tools::cve_info::CVEInfo;
 use crate::ai::service::tools::logger::ToolLogger;
 use crate::ai::service::tools::package_info::PackageInfo;
+use crate::ai::service::tools::product_info::ProductInfo;
 use crate::ai::service::tools::sbom_info::SbomInfo;
+use crate::product::service::ProductService;
 use crate::purl::service::PurlService;
 use crate::sbom::service::SbomService;
 use crate::vulnerability::service::VulnerabilityService;
@@ -24,7 +26,7 @@ pub mod sbom_info;
 
 pub fn new(db: Database) -> Vec<Arc<dyn Tool>> {
     vec![
-        // Arc::new(ToolLogger(ProductInfo(ProductService::new(db.clone())))),
+        Arc::new(ToolLogger(ProductInfo(ProductService::new(db.clone())))),
         Arc::new(ToolLogger(CVEInfo(VulnerabilityService::new(db.clone())))),
         Arc::new(ToolLogger(AdvisoryInfo(AdvisoryService::new(db.clone())))),
         Arc::new(ToolLogger(PackageInfo((
