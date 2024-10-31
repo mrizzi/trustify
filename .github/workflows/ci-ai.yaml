@@ -13,16 +13,24 @@ on:
 #    branches:
 #      - main
 
+
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
 
   ci:
-    runs-on: [ ubuntu-latest, macos-13, macos-latest ]
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest ]
+    #        os: [ ubuntu-latest, macos-13, macos-latest ]
 
     steps:
       - name: Maximize build space
+        if: matrix.os == 'ubuntu-latest'
         run: |
           df -h
           sudo rm -rf /usr/share/dotnet
@@ -54,3 +62,6 @@ jobs:
         run: cargo test -p trustify-module-fundamental completion -- --nocapture
         env:
           RUST_LOG: trustify_module_fundamental::ai=info,langchain_rust=info
+          OPENAI_API_KEY: ollama
+          OPENAI_API_BASE: http://localhost:11434/v1
+          OPENAI_MODEL: llama3.1:8b
