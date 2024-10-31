@@ -23,11 +23,13 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     strategy:
+      fail-fast: false
       matrix:
         os: [ ubuntu-latest, macos-13, macos-latest ]
 
     steps:
       - name: Maximize build space
+        if: matrix.os == 'ubuntu-latest'
         run: |
           df -h
           sudo rm -rf /usr/share/dotnet
