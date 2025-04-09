@@ -3,6 +3,7 @@ name: scale-test
 on:
   issue_comment:
     types: [created]
+  workflow_dispatch:
 
 jobs:
   scale-test:
