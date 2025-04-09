@@ -272,6 +272,7 @@ CPE (Product?) and/or pURLs described by the SBOM
 * [Ansible playbooks used for the Trustify deployment](https://github.com/trustification/trustify-ansible)
 * [Trustify API & user interface test suite](https://github.com/trustification/trustify-tests)
 * [Trustify load tests runner](https://github.com/trustification/trustify-load-test-runs)
+
 * [Trustify load test suite](https://github.com/trustification/scale-testing)
 * [Trustify GitHub CI helpers](https://github.com/trustification/trustify-ci)
 * [Trustify release tools](https://github.com/trustification/release-tools)
