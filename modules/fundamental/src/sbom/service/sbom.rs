@@ -1,4 +1,5 @@
 use super::SbomService;
+use crate::sbom::model::LicenseBasicInfo;
 use crate::{
     Error,
     sbom::model::{
@@ -179,7 +180,7 @@ impl SbomService {
             .group_by(sbom_node::Column::Name)
             .select_column_as(
                 Expr::cust_with_exprs(
-                    "coalesce(to_json(array_agg(distinct jsonb_build_object('expression', $1, 'type', $2)) filter (where $3))::text, '{}')",
+                    "coalesce(array_agg(distinct jsonb_build_object('license_name', $1, 'license_type', $2)) filter (where $3), '{}')",
                     [
                         license::Column::Text.into_simple_expr(),
                         sbom_package_license::Column::LicenseType.into_simple_expr(),
@@ -590,7 +591,7 @@ struct PackageCatcher {
     purls: Vec<Value>,
     cpes: Value,
     relationship: Option<Relationship>,
-    licenses: Option<String>,
+    licenses: Vec<Value>,
 }
 
 /// Convert values from a "package row" into an SBOM package
@@ -631,6 +632,18 @@ fn package_from_row(row: PackageCatcher) -> SbomPackage {
         .map(|cpe| cpe.to_string())
         .collect();
 
+    let licenses = row
+        .licenses
+        .into_iter()
+        .flat_map(|license| {
+            serde_json::from_value::<LicenseBasicInfo>(license.clone())
+                .inspect_err(|err| {
+                    log::warn!("Failed to deserialize license: {err}");
+                })
+                .ok()
+        })
+        .collect();
+
     SbomPackage {
         id: row.id,
         name: row.name,
@@ -638,7 +651,7 @@ fn package_from_row(row: PackageCatcher) -> SbomPackage {
         version: row.version,
         purl,
         cpe,
-        licenses: row.licenses,
+        licenses,
     }
 }
 

@@ -118,7 +118,13 @@ pub struct SbomPackage {
     /// CPEs identifying the package
     pub cpe: Vec<String>,
     /// License info
-    pub licenses: Option<String>,
+    pub licenses: Vec<LicenseBasicInfo>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ToSchema, SimpleObject)]
+pub struct LicenseBasicInfo {
+    pub(crate) license_name: String,
+    pub(crate) license_type: i32,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
