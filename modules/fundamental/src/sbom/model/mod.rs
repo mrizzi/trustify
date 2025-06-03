@@ -6,6 +6,7 @@ use crate::{
     Error, purl::model::summary::purl::PurlSummary, source_document::model::SourceDocument,
 };
 use async_graphql::SimpleObject;
+use sea_orm::FromJsonQueryResult;
 use sea_orm::{ConnectionTrait, ModelTrait, PaginatorTrait, prelude::Uuid};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
@@ -121,10 +122,12 @@ pub struct SbomPackage {
     pub licenses: Vec<LicenseBasicInfo>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ToSchema, SimpleObject)]
+#[derive(
+    Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ToSchema, SimpleObject, FromJsonQueryResult,
+)]
 pub struct LicenseBasicInfo {
-    pub(crate) license_name: String,
-    pub(crate) license_type: i32,
+    pub license_name: String,
+    pub license_type: i32,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
