@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use tracing::instrument;
 use trustify_common::{cpe::Cpe, model::Paginated, purl::Purl};
+use trustify_entity::sbom_package_license::LicenseCategory;
 use trustify_entity::{
     labels::Labels, relationship::Relationship, sbom, sbom_node, sbom_package, source_document,
 };
@@ -119,15 +120,14 @@ pub struct SbomPackage {
     /// CPEs identifying the package
     pub cpe: Vec<String>,
     /// License info
+    #[graphql(skip)]
     pub licenses: Vec<LicenseBasicInfo>,
 }
 
-#[derive(
-    Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ToSchema, SimpleObject, FromJsonQueryResult,
-)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, ToSchema, FromJsonQueryResult)]
 pub struct LicenseBasicInfo {
     pub license_name: String,
-    pub license_type: i32,
+    pub license_type: LicenseCategory,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]

@@ -3686,8 +3686,12 @@ components:
         license_name:
           type: string
         license_type:
-          type: integer
-          format: int32
+          $ref: '#/components/schemas/LicenseCategory'
+    LicenseCategory:
+      type: string
+      enum:
+      - Declared
+      - Concluded
     LicenseSummary:
       type: object
       required:

@@ -180,7 +180,7 @@ impl SbomService {
             .group_by(sbom_node::Column::Name)
             .select_column_as(
                 Expr::cust_with_exprs(
-                    "coalesce(json_agg(distinct jsonb_build_object('license_name', $1, 'license_type', $2)) filter (where $3), '{}')",
+                    "coalesce(json_agg(distinct jsonb_build_object('license_name', $1, 'license_type', CASE $2 WHEN 0 THEN 'Declared'::text WHEN 1 THEN 'Concluded'::text ELSE NULL END)) filter (where $3), '{}')",
                     [
                         license::Column::Text.into_simple_expr(),
                         sbom_package_license::Column::LicenseType.into_simple_expr(),
