@@ -3,6 +3,7 @@ use crate::{
     purl::{model::details::purl::StatusContext, service::PurlService},
     sbom::service::SbomService,
 };
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
 use std::str::FromStr;
 use test_context::test_context;
 use test_log::test;
@@ -12,7 +13,9 @@ use trustify_common::{
     model::Paginated,
     purl::Purl,
 };
+use trustify_entity::licensing_infos;
 use trustify_test_context::TrustifyContext;
+use uuid::Uuid;
 
 async fn ingest_extra_packages(ctx: &TrustifyContext) -> Result<(), anyhow::Error> {
     ctx.graph
@@ -618,6 +621,78 @@ async fn qualified_packages(ctx: &TrustifyContext) -> Result<(), anyhow::Error> 
     log::debug!("{results:#?}");
     assert_eq!(3, results.items.len());
 
+    Ok(())
+}
+
+#[test_context(TrustifyContext)]
+#[test(actix_web::test)]
+async fn qualified_packages_filter_by_license_one(
+    ctx: &TrustifyContext,
+) -> Result<(), anyhow::Error> {
+    let service = PurlService::new();
+    let rhel88_id = ctx
+        .ingest_document("spdx/license/rhel-8.8.0.json.bz2")
+        .await?
+        .id
+        .to_string();
+    let rhel89_id = ctx
+        .ingest_document("spdx/license/rhel-8.9.0.json.bz2")
+        .await?
+        .id
+        .to_string();
+
+    let rhel88_license_ref = licensing_infos::Entity::find()
+        .filter(licensing_infos::Column::SbomId.eq(Uuid::from_str(&rhel88_id)?))
+        .filter(licensing_infos::Column::Name.eq("GPLv2+"))
+        .one(&ctx.db)
+        .await?;
+    let rhel89_license_ref = licensing_infos::Entity::find()
+        .filter(licensing_infos::Column::SbomId.eq(Uuid::from_str(&rhel89_id)?))
+        .filter(licensing_infos::Column::Name.eq("GPLv2+"))
+        .one(&ctx.db)
+        .await?;
+    if let Some(lf) = rhel88_license_ref {
+        assert_eq!("GPLv2+", lf.name);
+        assert_eq!("LicenseRef-3", lf.license_id);
+    } else {
+        panic!("Cannot find the corresponding license ref.");
+    }
+    if let Some(lf) = rhel89_license_ref {
+        assert_eq!("GPLv2+", lf.name);
+        assert_eq!("LicenseRef-0", lf.license_id);
+    } else {
+        panic!("Cannot find the corresponding license ref.");
+    }
+
+    let start = std::time::Instant::now();
+    let results = service
+        .purls(q("license=GPLv2+"), Paginated::default(), &ctx.db)
+        .await?;
+    let duration = start.elapsed();
+    println!("First query execution time: {:?}", duration);
+    assert_eq!(8260, results.items.len());
+
+    let start = std::time::Instant::now();
+    let results = service
+        .purls(q("license~GPLv2+"), Paginated::default(), &ctx.db)
+        .await?;
+    let duration = start.elapsed();
+    println!("Second query execution time: {:?}", duration);
+    assert_eq!(29970, results.items.len());
+
+    let start = std::time::Instant::now();
+    let _results = service
+        .purls(
+            q("license~GPLv2+"),
+            Paginated {
+                offset: 0,
+                limit: 10,
+            },
+            &ctx.db,
+        )
+        .await?;
+    let duration = start.elapsed();
+    println!("third query execution time: {:?}", duration);
     Ok(())
 }
 
