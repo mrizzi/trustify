@@ -64,6 +64,15 @@ permission! {
         #[strum(serialize = "delete.sbom")]
         DeleteSbom,
 
+        #[strum(serialize = "create.sbom_group")]
+        CreateSbomGroup,
+        #[strum(serialize = "read.sbom_group")]
+        ReadSbomGroup,
+        #[strum(serialize = "update.sbom_group")]
+        UpdateSbomGroup,
+        #[strum(serialize = "delete.sbom_group")]
+        DeleteSbomGroup,
+
         #[strum(serialize = "create.advisory")]
         CreateAdvisory,
         #[strum(serialize = "read.advisory")]

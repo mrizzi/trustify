@@ -28,6 +28,7 @@ pub fn configure(
     crate::purl::endpoints::configure(svc, db.clone());
     crate::product::endpoints::configure(svc, db.clone());
     crate::sbom::endpoints::configure(svc, db.clone(), config.sbom_upload_limit);
+    crate::sbom_group::endpoints::configure(svc, db.clone());
     crate::vulnerability::endpoints::configure(svc, db.clone());
     crate::weakness::endpoints::configure(svc, db);
 }

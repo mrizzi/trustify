@@ -147,6 +147,13 @@ pub async fn get_license_export(
     }
 }
 
+#[derive(Clone, Debug, serde::Deserialize, utoipa::IntoParams)]
+struct SbomListParams {
+    /// Filter by group IDs
+    #[serde(default)]
+    group: Vec<Uuid>,
+}
+
 /// List SBOMs
 #[utoipa::path(
     tag = "sbom",
@@ -154,6 +161,7 @@ pub async fn get_license_export(
     params(
         Query,
         Paginated,
+        SbomListParams,
     ),
     responses(
         (status = 200, description = "Matching SBOMs", body = PaginatedResults<SbomSummary>),
@@ -165,13 +173,36 @@ pub async fn all(
     db: web::Data<Database>,
     web::Query(search): web::Query<Query>,
     web::Query(paginated): web::Query<Paginated>,
+    web::Query(params): web::Query<SbomListParams>,
     authorizer: web::Data<Authorizer>,
     user: UserInformation,
 ) -> actix_web::Result<impl Responder> {
     authorizer.require(&user, Permission::ReadSbom)?;
 
     let tx = db.begin_read().await?;
-    let result = fetch.fetch_sboms(search, paginated, (), &tx).await?;
+
+    // Apply group filtering at SQL level if groups are specified
+    let result = if !params.group.is_empty() {
+        use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QuerySelect, QueryTrait};
+        use trustify_entity::{sbom, sbom_group_assignment};
+
+        // Create subquery for SBOM IDs that belong to specified groups
+        let subquery = sbom_group_assignment::Entity::find()
+            .select_only()
+            .column(sbom_group_assignment::Column::SbomId)
+            .filter(sbom_group_assignment::Column::GroupId.is_in(params.group.clone()))
+            .into_query();
+
+        // Build query with group filter
+        let query = sbom::Entity::find().filter(sbom::Column::SbomId.in_subquery(subquery));
+
+        // Use SbomService to apply search, pagination and fetch results
+        fetch
+            .fetch_sboms_with_query(query, search, paginated, &tx)
+            .await?
+    } else {
+        fetch.fetch_sboms(search, paginated, (), &tx).await?
+    };
 
     Ok(HttpResponse::Ok().json(result))
 }
@@ -447,6 +478,10 @@ struct UploadQuery {
     #[serde(default)]
     #[param(inline)]
     cache: Cache,
+
+    /// Optional group IDs to assign the SBOM to
+    #[serde(default)]
+    groups: Vec<Uuid>,
 }
 
 const fn default_format() -> Format {
@@ -469,11 +504,13 @@ const fn default_format() -> Format {
 /// Upload a new SBOM
 pub async fn upload(
     service: web::Data<IngestorService>,
+    db: web::Data<Database>,
     config: web::Data<Config>,
     web::Query(UploadQuery {
         labels,
         format,
         cache,
+        groups,
     }): web::Query<UploadQuery>,
     content_type: Option<web::Header<header::ContentType>>,
     bytes: web::Bytes,
@@ -482,6 +519,63 @@ pub async fn upload(
     let bytes = decompress_async(bytes, content_type.map(|ct| ct.0), config.upload_limit).await??;
     let result = service.ingest(&bytes, format, labels, None, cache).await?;
     log::info!("Uploaded SBOM: {}", result.id);
+
+    // Assign to groups if provided
+    if !groups.is_empty() {
+        use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
+        use std::collections::HashSet;
+        use trustify_common::id::Id;
+        use trustify_entity::{sbom_group, sbom_group_assignment};
+
+        // Deduplicate group IDs
+        let unique_groups: HashSet<_> = groups.into_iter().collect();
+
+        let tx = db.begin().await?;
+        let sbom_uuid = match result.id {
+            Id::Uuid(uuid) => uuid,
+            Id::Sha256(_) | Id::Sha384(_) | Id::Sha512(_) | _ => {
+                return Err(Error::BadRequest(
+                    "Cannot assign SHA-based SBOM IDs to groups".into(),
+                ));
+            }
+        };
+
+        // Validate all groups exist
+        let existing_groups: HashSet<Uuid> = sbom_group::Entity::find()
+            .filter(sbom_group::Column::Id.is_in(unique_groups.iter().copied()))
+            .all(&tx)
+            .await?
+            .into_iter()
+            .map(|g| g.id)
+            .collect();
+
+        let missing_groups: Vec<_> = unique_groups
+            .iter()
+            .filter(|g| !existing_groups.contains(g))
+            .collect();
+
+        if !missing_groups.is_empty() {
+            return Err(Error::NotFound(format!(
+                "Group(s) not found: {}",
+                missing_groups
+                    .iter()
+                    .map(|id| id.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )));
+        }
+
+        for group_id in unique_groups {
+            sbom_group_assignment::ActiveModel {
+                sbom_id: Set(sbom_uuid),
+                group_id: Set(group_id),
+            }
+            .insert(&tx)
+            .await?;
+        }
+        tx.commit().await?;
+    }
+
     Ok(HttpResponse::Created().json(result))
 }
 

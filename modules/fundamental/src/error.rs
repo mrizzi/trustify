@@ -24,6 +24,8 @@ pub enum Error {
     BadRequest(String),
     #[error("Not found: {0}")]
     NotFound(String),
+    #[error("Conflict: {0}")]
+    Conflict(String),
     #[error(transparent)]
     Any(#[from] anyhow::Error),
     #[error("Unsupported hash algorithm")]
@@ -71,6 +73,9 @@ impl ResponseError for Error {
             }
             Self::NotFound(msg) => {
                 HttpResponse::NotFound().json(ErrorInformation::new("NotFound", msg))
+            }
+            Self::Conflict(msg) => {
+                HttpResponse::Conflict().json(ErrorInformation::new("Conflict", msg))
             }
             Self::Ingestor(inner) => inner.error_response(),
             Self::Query(err) => {

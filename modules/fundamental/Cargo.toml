@@ -52,6 +52,7 @@ uuid = { workspace = true }
 semver = { workspace = true }
 regex = { workspace = true }
 lenient_semver = { workspace = true }
+urlencoding = { workspace = true }
 
 async-graphql = { workspace = true, features = ["uuid", "time"], optional = true }
 

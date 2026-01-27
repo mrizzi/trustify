@@ -321,6 +321,48 @@ impl SbomService {
         Ok(PaginatedResults { total, items })
     }
 
+    /// Fetch SBOMs with a pre-filtered query (e.g., filtered by groups)
+    /// This allows applying additional filters like group membership before the standard search/pagination
+    pub async fn fetch_sboms_with_query<C: ConnectionTrait>(
+        &self,
+        query: sea_orm::Select<sbom::Entity>,
+        search: Query,
+        paginated: Paginated,
+        connection: &C,
+    ) -> Result<PaginatedResults<SbomSummary>, Error> {
+        use crate::sbom::service::sbom::SbomNodeLink;
+        use sea_orm::{JoinType, QuerySelect};
+        use trustify_common::db::{limiter::LimiterTrait, query::Filtering};
+        use trustify_entity::{sbom_node, source_document};
+
+        let limiter = query
+            .join(JoinType::Join, sbom::Relation::SourceDocument.def())
+            .find_also_linked(SbomNodeLink)
+            .filtering_with(
+                search,
+                Columns::from_entity::<sbom::Entity>()
+                    .add_columns(sbom_node::Entity)
+                    .add_columns(source_document::Entity)
+                    .alias("sbom_node", "r0")
+                    .translator(|f, op, v| match f.split_once(':') {
+                        Some(("label", key)) => Some(format!("labels:{key}{op}{v}")),
+                        _ => None,
+                    }),
+            )?
+            .limiting(connection, paginated.offset, paginated.limit);
+
+        let total = limiter.total().await?;
+        let sboms = limiter.fetch().await?;
+
+        let items = stream::iter(sboms.into_iter())
+            .then(|row| async { SbomSummary::from_entity(row, self, connection).await })
+            .try_filter_map(futures_util::future::ok)
+            .try_collect()
+            .await?;
+
+        Ok(PaginatedResults { total, items })
+    }
+
     /// Fetch all packages from an SBOM.
     ///
     /// If you need to find packages based on their relationship, even in the relationship to
