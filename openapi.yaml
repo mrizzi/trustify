@@ -947,6 +947,11 @@ paths:
         required: false
         schema:
           type: boolean
+      - name: parents
+        in: query
+        required: false
+        schema:
+          type: boolean
       responses:
         '200':
           description: Matching SBOM groups
@@ -966,6 +971,13 @@ paths:
                       - type: object
                         properties:
                           children:
+                            type:
+                            - array
+                            - 'null'
+                            items:
+                              type: string
+                              format: uuid
+                          parent_path:
                             type:
                             - array
                             - 'null'
@@ -1004,6 +1016,59 @@ paths:
           description: Invalid request
         '404':
           description: Parent group not found
+  /api/v2/group/sbom-assignment/{id}:
+    get:
+      tags:
+      - sbom_group
+      summary: Get all group assignments for an SBOM
+      operationId: getSbomGroupAssignments
+      parameters:
+      - name: id
+        in: path
+        description: ID of the SBOM
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: List of group IDs assigned to the SBOM
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+        '404':
+          description: SBOM not found
+    put:
+      tags:
+      - sbom_group
+      summary: Set (replace) all group assignments for an SBOM
+      operationId: setSbomGroupAssignments
+      parameters:
+      - name: id
+        in: path
+        description: ID of the SBOM
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+                format: uuid
+        required: true
+      responses:
+        '204':
+          description: Assignments updated successfully
+        '404':
+          description: SBOM or one or more groups not found
   /api/v2/group/sbom-by-path/{path}:
     get:
       tags:
@@ -1023,6 +1088,11 @@ paths:
         schema:
           type: boolean
       - name: totals
+        in: query
+        required: false
+        schema:
+          type: boolean
+      - name: parents
         in: query
         required: false
         schema:
@@ -1058,6 +1128,11 @@ paths:
         schema:
           type: boolean
       - name: totals
+        in: query
+        required: false
+        schema:
+          type: boolean
+      - name: parents
         in: query
         required: false
         schema:
@@ -5226,6 +5301,13 @@ components:
       - type: object
         properties:
           children:
+            type:
+            - array
+            - 'null'
+            items:
+              type: string
+              format: uuid
+          parent_path:
             type:
             - array
             - 'null'

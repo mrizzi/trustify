@@ -29,12 +29,58 @@ impl SbomGroupService {
         Self {}
     }
 
+    /// Validate group name according to ADR 00013 rules:
+    /// - Length: 1-255 characters
+    /// - No leading/trailing whitespace
+    /// - Character classes: digits, letters, spaces, hyphens, underscores, periods, parentheses
+    fn validate_name(name: &str) -> Result<(), Error> {
+        // Check length
+        if name.is_empty() {
+            return Err(Error::BadRequest("Group name cannot be empty".into()));
+        }
+        if name.len() > 255 {
+            return Err(Error::BadRequest(format!(
+                "Group name exceeds maximum length of 255 characters ({})",
+                name.len()
+            )));
+        }
+
+        // Check for leading/trailing whitespace
+        if name != name.trim() {
+            return Err(Error::BadRequest(
+                "Group name cannot have leading or trailing whitespace".into(),
+            ));
+        }
+
+        // Check allowed characters: digits, letters, spaces, hyphens, underscores, periods, parentheses
+        let valid_chars = name.chars().all(|c| {
+            c.is_ascii_alphanumeric()
+                || c == ' '
+                || c == '-'
+                || c == '_'
+                || c == '.'
+                || c == '('
+                || c == ')'
+        });
+
+        if !valid_chars {
+            return Err(Error::BadRequest(
+                "Group name contains invalid characters. Only letters, digits, spaces, hyphens, underscores, periods, and parentheses are allowed".into(),
+            ));
+        }
+
+        Ok(())
+    }
+
     /// Create a new SBOM group
     pub async fn create_group<C: ConnectionTrait>(
         &self,
         request: SbomGroupRequest,
         connection: &C,
     ) -> Result<SbomGroup, Error> {
+        // Validate name
+        Self::validate_name(&request.name)?;
+
         // Validate parent exists if provided
         if let Some(parent_id) = request.parent
             && sbom_group::Entity::find_by_id(parent_id)
@@ -77,6 +123,7 @@ impl SbomGroupService {
         id: Uuid,
         include_children: bool,
         include_totals: bool,
+        include_parents: bool,
         connection: &C,
     ) -> Result<Option<SbomGroupDetails>, Error> {
         let group = sbom_group::Entity::find_by_id(id).one(connection).await?;
@@ -95,6 +142,12 @@ impl SbomGroupService {
                     None
                 };
 
+                let parent_path = if include_parents {
+                    Some(self.get_parent_path(id, connection).await?)
+                } else {
+                    None
+                };
+
                 Ok(Some(SbomGroupDetails {
                     group: SbomGroup {
                         id: g.id,
@@ -105,6 +158,7 @@ impl SbomGroupService {
                     },
                     children,
                     sbom_count,
+                    parent_path,
                 }))
             }
             None => Ok(None),
@@ -117,6 +171,7 @@ impl SbomGroupService {
         path: &str,
         include_children: bool,
         include_totals: bool,
+        include_parents: bool,
         connection: &C,
     ) -> Result<Option<SbomGroupDetails>, Error> {
         let names = path::parse_path(path)?;
@@ -136,6 +191,12 @@ impl SbomGroupService {
                     None
                 };
 
+                let parent_path = if include_parents {
+                    Some(self.get_parent_path(g.id, connection).await?)
+                } else {
+                    None
+                };
+
                 Ok(Some(SbomGroupDetails {
                     group: SbomGroup {
                         id: g.id,
@@ -146,6 +207,7 @@ impl SbomGroupService {
                     },
                     children,
                     sbom_count,
+                    parent_path,
                 }))
             }
             None => Ok(None),
@@ -174,6 +236,9 @@ impl SbomGroupService {
                 group.revision, revision
             )));
         }
+
+        // Validate name
+        Self::validate_name(&request.name)?;
 
         // Validate parent change doesn't create a cycle
         if let Some(new_parent) = request.parent {
@@ -248,13 +313,15 @@ impl SbomGroupService {
         search: Query,
         paginated: Paginated,
         include_totals: bool,
+        include_parents: bool,
         connection: &C,
     ) -> Result<PaginatedResults<SbomGroupDetails>, Error> {
-        let limiter = sbom_group::Entity::find().filtering(search)?.limiting(
-            connection,
-            paginated.offset,
-            paginated.limit,
-        );
+        use sea_orm::QueryOrder;
+
+        let limiter = sbom_group::Entity::find()
+            .order_by_asc(sbom_group::Column::Name)
+            .filtering(search)?
+            .limiting(connection, paginated.offset, paginated.limit);
 
         let total = limiter.total().await?;
         let groups = limiter.fetch().await?;
@@ -263,6 +330,12 @@ impl SbomGroupService {
         for g in groups {
             let sbom_count = if include_totals {
                 Some(self.count_sboms(g.id, connection).await?)
+            } else {
+                None
+            };
+
+            let parent_path = if include_parents {
+                Some(self.get_parent_path(g.id, connection).await?)
             } else {
                 None
             };
@@ -277,6 +350,7 @@ impl SbomGroupService {
                 },
                 children: None,
                 sbom_count,
+                parent_path,
             });
         }
 
@@ -338,6 +412,125 @@ impl SbomGroupService {
         Ok(children.into_iter().map(|g| g.id).collect())
     }
 
+    /// Validate and deduplicate group IDs
+    /// Returns deduplicated set of valid group IDs or error if any are missing
+    async fn validate_and_deduplicate_groups<C: ConnectionTrait>(
+        &self,
+        group_ids: Vec<Uuid>,
+        connection: &C,
+    ) -> Result<std::collections::HashSet<Uuid>, Error> {
+        use std::collections::HashSet;
+
+        // Deduplicate group IDs
+        let unique_groups: HashSet<_> = group_ids.into_iter().collect();
+
+        if unique_groups.is_empty() {
+            return Ok(unique_groups);
+        }
+
+        // Validate all groups exist
+        let existing_groups: HashSet<Uuid> = sbom_group::Entity::find()
+            .filter(sbom_group::Column::Id.is_in(unique_groups.iter().copied()))
+            .all(connection)
+            .await?
+            .into_iter()
+            .map(|g| g.id)
+            .collect();
+
+        let missing_groups: Vec<_> = unique_groups
+            .iter()
+            .filter(|g| !existing_groups.contains(g))
+            .collect();
+
+        if !missing_groups.is_empty() {
+            return Err(Error::NotFound(format!(
+                "Group(s) not found: {}",
+                missing_groups
+                    .iter()
+                    .map(|id| id.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )));
+        }
+
+        Ok(unique_groups)
+    }
+
+    /// Get all group assignments for an SBOM
+    pub async fn get_sbom_assignments<C: ConnectionTrait>(
+        &self,
+        sbom_id: Uuid,
+        connection: &C,
+    ) -> Result<Vec<Uuid>, Error> {
+        let assignments = sbom_group_assignment::Entity::find()
+            .filter(sbom_group_assignment::Column::SbomId.eq(sbom_id))
+            .all(connection)
+            .await?;
+
+        Ok(assignments.into_iter().map(|a| a.group_id).collect())
+    }
+
+    /// Add group assignments to an SBOM (does not remove existing assignments)
+    pub async fn add_sbom_assignments<C: ConnectionTrait>(
+        &self,
+        sbom_id: Uuid,
+        group_ids: Vec<Uuid>,
+        connection: &C,
+    ) -> Result<(), Error> {
+        use sea_orm::ActiveModelTrait;
+
+        let unique_groups = self
+            .validate_and_deduplicate_groups(group_ids, connection)
+            .await?;
+
+        // Insert new assignments (ignoring duplicates via ON CONFLICT DO NOTHING would be ideal,
+        // but SeaORM doesn't support that cleanly, so we'll let the PK constraint handle it)
+        for group_id in unique_groups {
+            // Attempt insert, ignore if already exists
+            let _ = sbom_group_assignment::ActiveModel {
+                sbom_id: Set(sbom_id),
+                group_id: Set(group_id),
+            }
+            .insert(connection)
+            .await;
+            // We ignore errors here since PK violations are expected if assignment already exists
+        }
+
+        Ok(())
+    }
+
+    /// Set (replace) all group assignments for an SBOM
+    pub async fn set_sbom_assignments<C: ConnectionTrait>(
+        &self,
+        sbom_id: Uuid,
+        group_ids: Vec<Uuid>,
+        connection: &C,
+    ) -> Result<(), Error> {
+        use sea_orm::ActiveModelTrait;
+
+        let unique_groups = self
+            .validate_and_deduplicate_groups(group_ids, connection)
+            .await?;
+
+        // Delete existing assignments
+        sbom_group_assignment::Entity::delete_many()
+            .filter(sbom_group_assignment::Column::SbomId.eq(sbom_id))
+            .exec(connection)
+            .await?;
+
+        // Insert new assignments
+        for group_id in unique_groups {
+            sbom_group_assignment::ActiveModel {
+                sbom_id: Set(sbom_id),
+                group_id: Set(group_id),
+            }
+            .insert(connection)
+            .await?;
+        }
+
+        Ok(())
+    }
+
     /// Count SBOMs in a group
     async fn count_sboms<C: ConnectionTrait>(
         &self,
@@ -352,5 +545,54 @@ impl SbomGroupService {
             .await?;
 
         Ok(count)
+    }
+
+    /// Get parent path from root to the given group's parent (not including the group itself)
+    /// Returns array of UUIDs from root to parent, or empty array if group has no parent
+    async fn get_parent_path<C: ConnectionTrait>(
+        &self,
+        group_id: Uuid,
+        connection: &C,
+    ) -> Result<Vec<Uuid>, Error> {
+        let group = sbom_group::Entity::find_by_id(group_id)
+            .one(connection)
+            .await?
+            .ok_or_else(|| Error::NotFound(format!("Group {} not found", group_id)))?;
+
+        if group.parent_id.is_none() {
+            return Ok(Vec::new());
+        }
+
+        // Use recursive query to get path from root to parent
+        #[derive(Debug, FromQueryResult)]
+        struct PathResult {
+            path: Vec<Uuid>,
+        }
+
+        let result = PathResult::find_by_statement(sea_orm::Statement::from_sql_and_values(
+            sea_orm::DatabaseBackend::Postgres,
+            r#"
+            WITH RECURSIVE ancestors AS (
+                SELECT id, parent_id, ARRAY[id] AS path
+                FROM sbom_group
+                WHERE id = $1
+
+                UNION ALL
+
+                SELECT g.id, g.parent_id, g.id || a.path
+                FROM sbom_group g
+                INNER JOIN ancestors a ON g.id = a.parent_id
+            )
+            SELECT path FROM ancestors WHERE parent_id IS NULL
+            "#,
+            [group.parent_id.into()],
+        ))
+        .one(connection)
+        .await?;
+
+        match result {
+            Some(r) => Ok(r.path),
+            None => Ok(Vec::new()),
+        }
     }
 }

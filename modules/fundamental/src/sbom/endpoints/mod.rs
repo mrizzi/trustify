@@ -51,10 +51,12 @@ pub fn configure(
     upload_limit: usize,
 ) {
     let sbom_service = SbomService::new(db.clone());
+    let sbom_group_service = crate::sbom_group::service::SbomGroupService::new();
 
     config
         .app_data(web::Data::new(db))
         .app_data(web::Data::new(sbom_service))
+        .app_data(web::Data::new(sbom_group_service))
         .app_data(web::Data::new(Config { upload_limit }))
         .service(all)
         .service(all_related)
@@ -181,24 +183,9 @@ pub async fn all(
 
     let tx = db.begin_read().await?;
 
-    // Apply group filtering at SQL level if groups are specified
     let result = if !params.group.is_empty() {
-        use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QuerySelect, QueryTrait};
-        use trustify_entity::{sbom, sbom_group_assignment};
-
-        // Create subquery for SBOM IDs that belong to specified groups
-        let subquery = sbom_group_assignment::Entity::find()
-            .select_only()
-            .column(sbom_group_assignment::Column::SbomId)
-            .filter(sbom_group_assignment::Column::GroupId.is_in(params.group.clone()))
-            .into_query();
-
-        // Build query with group filter
-        let query = sbom::Entity::find().filter(sbom::Column::SbomId.in_subquery(subquery));
-
-        // Use SbomService to apply search, pagination and fetch results
         fetch
-            .fetch_sboms_with_query(query, search, paginated, &tx)
+            .fetch_sboms_by_groups(search, paginated, params.group, &tx)
             .await?
     } else {
         fetch.fetch_sboms(search, paginated, (), &tx).await?
@@ -502,8 +489,10 @@ const fn default_format() -> Format {
 )]
 #[post("/v2/sbom")]
 /// Upload a new SBOM
+#[allow(clippy::too_many_arguments)]
 pub async fn upload(
     service: web::Data<IngestorService>,
+    group_service: web::Data<crate::sbom_group::service::SbomGroupService>,
     db: web::Data<Database>,
     config: web::Data<Config>,
     web::Query(UploadQuery {
@@ -522,15 +511,8 @@ pub async fn upload(
 
     // Assign to groups if provided
     if !groups.is_empty() {
-        use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
-        use std::collections::HashSet;
         use trustify_common::id::Id;
-        use trustify_entity::{sbom_group, sbom_group_assignment};
 
-        // Deduplicate group IDs
-        let unique_groups: HashSet<_> = groups.into_iter().collect();
-
-        let tx = db.begin().await?;
         let sbom_uuid = match result.id {
             Id::Uuid(uuid) => uuid,
             Id::Sha256(_) | Id::Sha384(_) | Id::Sha512(_) | _ => {
@@ -540,39 +522,10 @@ pub async fn upload(
             }
         };
 
-        // Validate all groups exist
-        let existing_groups: HashSet<Uuid> = sbom_group::Entity::find()
-            .filter(sbom_group::Column::Id.is_in(unique_groups.iter().copied()))
-            .all(&tx)
-            .await?
-            .into_iter()
-            .map(|g| g.id)
-            .collect();
-
-        let missing_groups: Vec<_> = unique_groups
-            .iter()
-            .filter(|g| !existing_groups.contains(g))
-            .collect();
-
-        if !missing_groups.is_empty() {
-            return Err(Error::NotFound(format!(
-                "Group(s) not found: {}",
-                missing_groups
-                    .iter()
-                    .map(|id| id.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            )));
-        }
-
-        for group_id in unique_groups {
-            sbom_group_assignment::ActiveModel {
-                sbom_id: Set(sbom_uuid),
-                group_id: Set(group_id),
-            }
-            .insert(&tx)
+        let tx = db.begin().await?;
+        group_service
+            .add_sbom_assignments(sbom_uuid, groups, &tx)
             .await?;
-        }
         tx.commit().await?;
     }
 

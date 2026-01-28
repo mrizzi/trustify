@@ -321,6 +321,32 @@ impl SbomService {
         Ok(PaginatedResults { total, items })
     }
 
+    /// Fetch SBOMs filtered by group membership
+    pub async fn fetch_sboms_by_groups<C: ConnectionTrait>(
+        &self,
+        search: Query,
+        paginated: Paginated,
+        group_ids: Vec<Uuid>,
+        connection: &C,
+    ) -> Result<PaginatedResults<SbomSummary>, Error> {
+        use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QuerySelect, QueryTrait};
+        use trustify_entity::sbom_group_assignment;
+
+        // Create subquery for SBOM IDs that belong to specified groups
+        let subquery = sbom_group_assignment::Entity::find()
+            .select_only()
+            .column(sbom_group_assignment::Column::SbomId)
+            .filter(sbom_group_assignment::Column::GroupId.is_in(group_ids))
+            .into_query();
+
+        // Build query with group filter
+        let query = sbom::Entity::find().filter(sbom::Column::SbomId.in_subquery(subquery));
+
+        // Apply search, pagination and fetch results
+        self.fetch_sboms_with_query(query, search, paginated, connection)
+            .await
+    }
+
     /// Fetch SBOMs with a pre-filtered query (e.g., filtered by groups)
     /// This allows applying additional filters like group membership before the standard search/pagination
     pub async fn fetch_sboms_with_query<C: ConnectionTrait>(

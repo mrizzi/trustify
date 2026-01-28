@@ -29,6 +29,9 @@ pub struct SbomGroupDetails {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sbom_count: Option<u64>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parent_path: Option<Vec<Uuid>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
