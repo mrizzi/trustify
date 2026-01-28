@@ -55,6 +55,28 @@ use trustify_entity::{
     source_document, status, versioned_purl, vulnerability,
 };
 
+/// Standard translator for SBOM queries with label support
+fn standard_sbom_translator(field: &str, operator: &str, value: &str) -> Option<String> {
+    match field.split_once(':') {
+        Some(("label", key)) => Some(format!("labels:{key}{operator}{value}")),
+        _ => None,
+    }
+}
+
+/// Translator for SBOM queries with license filtering support
+/// Adds empty condition for LICENSE field since filtering happens in subqueries
+fn license_aware_sbom_translator(field: &str, operator: &str, value: &str) -> Option<String> {
+    match field.split_once(':') {
+        Some(("label", key)) => Some(format!("labels:{key}{operator}{value}")),
+        _ => match field {
+            // Add an empty condition (effectively TRUE) to the main SQL query
+            // since the real filtering by license happens in the license subqueries above
+            LICENSE => Some("".to_string()),
+            _ => None,
+        },
+    }
+}
+
 impl SbomService {
     #[instrument(skip(self, connection), err(level=tracing::Level::INFO))]
     async fn fetch_sbom<C: ConnectionTrait>(
@@ -288,37 +310,15 @@ impl SbomService {
             query = query.filter(combined_condition);
         }
 
-        let limiter = query
-            .join(JoinType::Join, sbom::Relation::SourceDocument.def())
-            .find_also_linked(SbomNodeLink)
-            .filtering_with(
-                search,
-                Columns::from_entity::<sbom::Entity>()
-                    .add_columns(sbom_node::Entity)
-                    .add_columns(source_document::Entity)
-                    .alias("sbom_node", "r0")
-                    .translator(|f, op, v| match f.split_once(':') {
-                        Some(("label", key)) => Some(format!("labels:{key}{op}{v}")),
-                        _ => match f {
-                            // Add an empty condition (effectively TRUE) to the main SQL query
-                            // since the real filtering by license happens in the license subqueries above
-                            LICENSE => Some("".to_string()),
-                            _ => None,
-                        },
-                    }),
-            )?
-            .limiting(connection, paginated.offset, paginated.limit);
-
-        let total = limiter.total().await?;
-        let sboms = limiter.fetch().await?;
-
-        let items = stream::iter(sboms.into_iter())
-            .then(|row| async { SbomSummary::from_entity(row, self, connection).await })
-            .try_filter_map(futures_util::future::ok)
-            .try_collect()
-            .await?;
-
-        Ok(PaginatedResults { total, items })
+        // Delegate to common handler with license-aware translator
+        self.fetch_sboms_with_query(
+            query,
+            search,
+            paginated,
+            connection,
+            license_aware_sbom_translator,
+        )
+        .await
     }
 
     /// Fetch SBOMs filtered by group membership
@@ -343,8 +343,14 @@ impl SbomService {
         let query = sbom::Entity::find().filter(sbom::Column::SbomId.in_subquery(subquery));
 
         // Apply search, pagination and fetch results
-        self.fetch_sboms_with_query(query, search, paginated, connection)
-            .await
+        self.fetch_sboms_with_query(
+            query,
+            search,
+            paginated,
+            connection,
+            standard_sbom_translator,
+        )
+        .await
     }
 
     /// Fetch SBOMs with a pre-filtered query (e.g., filtered by groups)
@@ -355,6 +361,7 @@ impl SbomService {
         search: Query,
         paginated: Paginated,
         connection: &C,
+        translator: fn(&str, &str, &str) -> Option<String>,
     ) -> Result<PaginatedResults<SbomSummary>, Error> {
         use crate::sbom::service::sbom::SbomNodeLink;
         use sea_orm::{JoinType, QuerySelect};
@@ -370,10 +377,7 @@ impl SbomService {
                     .add_columns(sbom_node::Entity)
                     .add_columns(source_document::Entity)
                     .alias("sbom_node", "r0")
-                    .translator(|f, op, v| match f.split_once(':') {
-                        Some(("label", key)) => Some(format!("labels:{key}{op}{v}")),
-                        _ => None,
-                    }),
+                    .translator(translator),
             )?
             .limiting(connection, paginated.offset, paginated.limit);
 
