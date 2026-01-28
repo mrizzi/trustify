@@ -5,7 +5,7 @@ use crate::{
     Error,
     db::DatabaseExt,
     sbom_group::{
-        model::{SbomGroupDetails, SbomGroupRequest},
+        model::{SbomGroup, SbomGroupDetails, SbomGroupRequest},
         service::SbomGroupService,
     },
 };
@@ -159,7 +159,7 @@ pub async fn get_by_path(
     operation_id = "createSbomGroup",
     request_body = SbomGroupRequest,
     responses(
-        (status = 201, description = "Group created", body = crate::sbom_group::model::SbomGroup),
+        (status = 201, description = "Group created", body = SbomGroup),
         (status = 400, description = "Invalid request"),
         (status = 404, description = "Parent group not found"),
     ),

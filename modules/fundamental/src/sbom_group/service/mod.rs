@@ -8,6 +8,7 @@ use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, FromQueryResult, PaginatorTrait,
     QueryFilter, Set, TransactionTrait,
 };
+use std::collections::HashSet;
 use trustify_common::{
     db::{
         limiter::LimiterTrait,
@@ -418,9 +419,7 @@ impl SbomGroupService {
         &self,
         group_ids: Vec<Uuid>,
         connection: &C,
-    ) -> Result<std::collections::HashSet<Uuid>, Error> {
-        use std::collections::HashSet;
-
+    ) -> Result<HashSet<Uuid>, Error> {
         // Deduplicate group IDs
         let unique_groups: HashSet<_> = group_ids.into_iter().collect();
 

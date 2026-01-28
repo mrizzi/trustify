@@ -21,6 +21,7 @@ use crate::{
         },
         service::SbomService,
     },
+    sbom_group::service::SbomGroupService,
 };
 use actix_web::{HttpResponse, Responder, delete, get, http::header, post, web};
 use config::Config;
@@ -51,7 +52,7 @@ pub fn configure(
     upload_limit: usize,
 ) {
     let sbom_service = SbomService::new(db.clone());
-    let sbom_group_service = crate::sbom_group::service::SbomGroupService::new();
+    let sbom_group_service = SbomGroupService::new();
 
     config
         .app_data(web::Data::new(db))
@@ -492,7 +493,7 @@ const fn default_format() -> Format {
 #[allow(clippy::too_many_arguments)]
 pub async fn upload(
     service: web::Data<IngestorService>,
-    group_service: web::Data<crate::sbom_group::service::SbomGroupService>,
+    group_service: web::Data<SbomGroupService>,
     db: web::Data<Database>,
     config: web::Data<Config>,
     web::Query(UploadQuery {
