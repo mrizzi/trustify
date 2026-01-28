@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1769104275893,
+  "lastUpdate": 1769587060142,
   "repoUrl": "https://github.com/guacsec/trustify",
   "entries": {
     "Benchmark": [
@@ -16756,6 +16756,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/guacsec/trustify/commit/56ee049a4c6500cd5d320606113e0aec614107a3"
         },
         "date": 1769104274593,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 8,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "00hf11@gmail.com",
+            "name": "Helio Frota",
+            "username": "helio-frota"
+          },
+          "committer": {
+            "email": "ctron@dentrassi.de",
+            "name": "Jens Reimann",
+            "username": "ctron"
+          },
+          "distinct": false,
+          "id": "a93901a3b5ba0b6bd38e2f8cead9b5cee13333b1",
+          "message": "chore: removing rust-toolchain.toml\n\n* Also setting minimum supported Rust version aligned with current\nrust version available on github action runner.",
+          "timestamp": "2026-01-28T07:06:56Z",
+          "tree_id": "26aacada24aae833e18732ba9a0c27e7cf1646d9",
+          "url": "https://github.com/guacsec/trustify/commit/a93901a3b5ba0b6bd38e2f8cead9b5cee13333b1"
+        },
+        "date": 1769587058566,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
