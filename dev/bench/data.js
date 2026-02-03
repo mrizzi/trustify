@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1770131272405,
+  "lastUpdate": 1770131918526,
   "repoUrl": "https://github.com/guacsec/trustify",
   "entries": {
     "Benchmark": [
@@ -16848,6 +16848,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Ingest DS3",
             "value": 9,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "dbosanac@redhat.com",
+            "name": "Dejan Bosanac",
+            "username": "dejanb"
+          },
+          "committer": {
+            "email": "dbosanac@redhat.com",
+            "name": "Dejan Bosanac",
+            "username": "dejanb"
+          },
+          "distinct": true,
+          "id": "29d9b15aba087979401e0c60d0d1580fc5092b98",
+          "message": "chore: move csaf-rs to scm-rs organization",
+          "timestamp": "2026-02-03T14:31:02Z",
+          "tree_id": "8ed96131cda9f047877248b544fd40a88f8dabce",
+          "url": "https://github.com/guacsec/trustify/commit/29d9b15aba087979401e0c60d0d1580fc5092b98"
+        },
+        "date": 1770131916507,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 8,
             "unit": "s"
           }
         ]
