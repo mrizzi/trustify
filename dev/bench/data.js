@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1769702571848,
+  "lastUpdate": 1770131272405,
   "repoUrl": "https://github.com/guacsec/trustify",
   "entries": {
     "Benchmark": [
@@ -16814,6 +16814,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/guacsec/trustify/commit/015cb9e34fa77e509eba35974df2d73bd1aea0d8"
         },
         "date": 1769702570146,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 9,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "dbosanac@redhat.com",
+            "name": "Dejan Bosanac",
+            "username": "dejanb"
+          },
+          "committer": {
+            "email": "dbosanac@redhat.com",
+            "name": "Dejan Bosanac",
+            "username": "dejanb"
+          },
+          "distinct": false,
+          "id": "5ab538aa62027622450b51050d48a7f556e799b5",
+          "message": "chore: upgrade to cvss-rs 0.2.1",
+          "timestamp": "2026-02-03T14:19:53Z",
+          "tree_id": "25012ac4daacc472dd3cf86209e076c74436019d",
+          "url": "https://github.com/guacsec/trustify/commit/5ab538aa62027622450b51050d48a7f556e799b5"
+        },
+        "date": 1770131271188,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
