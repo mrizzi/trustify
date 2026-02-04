@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1770131918526,
+  "lastUpdate": 1770197956040,
   "repoUrl": "https://github.com/guacsec/trustify",
   "entries": {
     "Benchmark": [
@@ -16872,6 +16872,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/guacsec/trustify/commit/29d9b15aba087979401e0c60d0d1580fc5092b98"
         },
         "date": 1770131916507,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 8,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "dbosanac@redhat.com",
+            "name": "Dejan Bosanac",
+            "username": "dejanb"
+          },
+          "committer": {
+            "email": "dbosanac@redhat.com",
+            "name": "Dejan Bosanac",
+            "username": "dejanb"
+          },
+          "distinct": true,
+          "id": "2d72cb1604b698bc24de47469f8ec1b3ec90e0e5",
+          "message": "feat: migrate API consumers to read from advisory_vulnerability_score table\n\nUpdate VulnerabilityService, PurlStatus, and VulnerabilitySummary to query\nCVSS scores from the new unified advisory_vulnerability_score table instead\nof the legacy cvss3 table. This completes the read-side migration for the\nscore consolidation work started in PR #1913.\n\nThe ingestion side continues to write to both tables (dual-write) to ensure\nbackwards compatibility. Removal of the dual-write, deprecation of the legacy\ntable, and any appropriate API changes will be addressed in follow-up PRs.\n\nAssisted-By: Claude",
+          "timestamp": "2026-02-04T08:47:35Z",
+          "tree_id": "19f2934ce19553721356d20226bfefd87abf6fd4",
+          "url": "https://github.com/guacsec/trustify/commit/2d72cb1604b698bc24de47469f8ec1b3ec90e0e5"
+        },
+        "date": 1770197954009,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
