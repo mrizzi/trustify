@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1770197956040,
+  "lastUpdate": 1770201143302,
   "repoUrl": "https://github.com/guacsec/trustify",
   "entries": {
     "Benchmark": [
@@ -16901,6 +16901,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/guacsec/trustify/commit/2d72cb1604b698bc24de47469f8ec1b3ec90e0e5"
         },
         "date": 1770197954009,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 8,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jfuller@redhat.com",
+            "name": "JimFuller-RedHat",
+            "username": "JimFuller-RedHat"
+          },
+          "committer": {
+            "email": "ctron@dentrassi.de",
+            "name": "Jens Reimann",
+            "username": "ctron"
+          },
+          "distinct": true,
+          "id": "2826524e9f24970e56632c8d749940dbe4953e5e",
+          "message": "latest analysis: fixes TC-3278 and TC-3073 by providing tie breaker logic for when equal external node_id",
+          "timestamp": "2026-02-04T09:50:53Z",
+          "tree_id": "46330a22635325bb79de9398f3c314254de0479c",
+          "url": "https://github.com/guacsec/trustify/commit/2826524e9f24970e56632c8d749940dbe4953e5e"
+        },
+        "date": 1770201141811,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
