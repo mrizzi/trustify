@@ -40,6 +40,7 @@ mod m0001200_source_document_fk_indexes;
 mod m0002000_add_sbom_properties;
 mod m0002010_add_advisory_scores;
 mod m0002020_add_sbom_group;
+mod m0002030_license_query_performance;
 
 pub trait MigratorExt: Send {
     fn build_migrations() -> Migrations;
@@ -96,6 +97,7 @@ impl MigratorExt for Migrator {
             .data(m0002000_add_sbom_properties::Migration)
             .data(m0002010_add_advisory_scores::Migration)
             .normal(m0002020_add_sbom_group::Migration)
+            .normal(m0002030_license_query_performance::Migration)
     }
 }
 
