@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1770649046507,
+  "lastUpdate": 1770806926896,
   "repoUrl": "https://github.com/guacsec/trustify",
   "entries": {
     "Benchmark": [
@@ -17017,6 +17017,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/guacsec/trustify/commit/58d085dd812e9f85239c3cc8a7874fe289482e24"
         },
         "date": 1770649044861,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 8,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "86094767+mrrajan@users.noreply.github.com",
+            "name": "mrrajan",
+            "username": "mrrajan"
+          },
+          "committer": {
+            "email": "ctron@dentrassi.de",
+            "name": "Jens Reimann",
+            "username": "ctron"
+          },
+          "distinct": true,
+          "id": "a22b8fcc5014b0725ff2573f9594ef625747e26f",
+          "message": "Remove generic secrets and Update keycloak-setup shell script\n\nSigned-off-by: mrrajan <86094767+mrrajan@users.noreply.github.com.>\n\nAssisted-by: Cursor <claude-4.5-sonnet>",
+          "timestamp": "2026-02-11T09:56:04Z",
+          "tree_id": "3e6d46f8297914ce40e73b55537c4209fe5ea31b",
+          "url": "https://github.com/guacsec/trustify/commit/a22b8fcc5014b0725ff2573f9594ef625747e26f"
+        },
+        "date": 1770806924885,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
