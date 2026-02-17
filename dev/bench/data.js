@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1770827507656,
+  "lastUpdate": 1771340069810,
   "repoUrl": "https://github.com/guacsec/trustify",
   "entries": {
     "Benchmark": [
@@ -17080,6 +17080,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Ingest DS3",
             "value": 9,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jim@crossleys.org",
+            "name": "Jim Crossley",
+            "username": "jcrossley3"
+          },
+          "committer": {
+            "email": "jim@crossleys.org",
+            "name": "Jim Crossley",
+            "username": "jcrossley3"
+          },
+          "distinct": true,
+          "id": "65b2e643543c01a4161ad823acc62b80370156d7",
+          "message": "Ensure AIBOM's may be uploaded via the SBOM upload endpoint\n\nAlso added a non_null constraint on the properties column of sbom_ai\ntable.",
+          "timestamp": "2026-02-17T14:00:13Z",
+          "tree_id": "542f780b930b4a344c6833d546e852546a8fd45a",
+          "url": "https://github.com/guacsec/trustify/commit/65b2e643543c01a4161ad823acc62b80370156d7"
+        },
+        "date": 1771340067757,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 10,
             "unit": "s"
           }
         ]
