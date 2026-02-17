@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1771340069810,
+  "lastUpdate": 1771345683103,
   "repoUrl": "https://github.com/guacsec/trustify",
   "entries": {
     "Benchmark": [
@@ -17104,6 +17104,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/guacsec/trustify/commit/65b2e643543c01a4161ad823acc62b80370156d7"
         },
         "date": 1771340067757,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 10,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jim@crossleys.org",
+            "name": "Jim Crossley",
+            "username": "jcrossley3"
+          },
+          "committer": {
+            "email": "jim@crossleys.org",
+            "name": "Jim Crossley",
+            "username": "jcrossley3"
+          },
+          "distinct": false,
+          "id": "4cca000b023238a0444f0df4ee103c11cbbf06ca",
+          "message": "Ensure CBOM's may be uploaded via the SBOM upload endpoint",
+          "timestamp": "2026-02-17T15:46:03Z",
+          "tree_id": "03a6bb2b39405585df15b3635aef3172badf7b62",
+          "url": "https://github.com/guacsec/trustify/commit/4cca000b023238a0444f0df4ee103c11cbbf06ca"
+        },
+        "date": 1771345681993,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
