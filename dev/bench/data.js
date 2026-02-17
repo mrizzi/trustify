@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1771345683103,
+  "lastUpdate": 1771346146405,
   "repoUrl": "https://github.com/guacsec/trustify",
   "entries": {
     "Benchmark": [
@@ -17138,6 +17138,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Ingest DS3",
             "value": 10,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jfuller@redhat.com",
+            "name": "JimFuller-RedHat",
+            "username": "JimFuller-RedHat"
+          },
+          "committer": {
+            "email": "81251736+JimFuller-RedHat@users.noreply.github.com",
+            "name": "Jim Fuller",
+            "username": "JimFuller-RedHat"
+          },
+          "distinct": true,
+          "id": "71003168bc7bd83b7b413d8e5cbe6883c1257791",
+          "message": "latest: upstream is the ultimate top level root for any component, but we want to retrieve rh CPE from top level component root (not try to resolve from upstream definition)",
+          "timestamp": "2026-02-17T15:59:45Z",
+          "tree_id": "87ba8ba22fe17d8ac3e6d20aa788cfa9fcc16c91",
+          "url": "https://github.com/guacsec/trustify/commit/71003168bc7bd83b7b413d8e5cbe6883c1257791"
+        },
+        "date": 1771346143964,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 9,
             "unit": "s"
           }
         ]
