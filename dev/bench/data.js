@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1771513394720,
+  "lastUpdate": 1771941207954,
   "repoUrl": "https://github.com/guacsec/trustify",
   "entries": {
     "Benchmark": [
@@ -17249,6 +17249,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/guacsec/trustify/commit/bb24af96565e987f69896493ce53fbad4111e5ff"
         },
         "date": 1771513393338,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 9,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ctron@dentrassi.de",
+            "name": "Jens Reimann",
+            "username": "ctron"
+          },
+          "committer": {
+            "email": "ctron@dentrassi.de",
+            "name": "Jens Reimann",
+            "username": "ctron"
+          },
+          "distinct": true,
+          "id": "8c73a7aa20d4682e67290ff088a73986ac61eecc",
+          "message": "chore: refresh dependencies\n\nMainly for walker-common",
+          "timestamp": "2026-02-24T12:58:21Z",
+          "tree_id": "e32ec21c64ed9b1dcac7deff426af652eb019a49",
+          "url": "https://github.com/guacsec/trustify/commit/8c73a7aa20d4682e67290ff088a73986ac61eecc"
+        },
+        "date": 1771941206856,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
