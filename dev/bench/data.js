@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1772038976335,
+  "lastUpdate": 1772191050642,
   "repoUrl": "https://github.com/guacsec/trustify",
   "entries": {
     "Benchmark": [
@@ -17336,6 +17336,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/guacsec/trustify/commit/f53bb689573a246f435fe7ff9861e8d7c591a987"
         },
         "date": 1772038975128,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 9,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "2582866+carlosthe19916@users.noreply.github.com",
+            "name": "Carlos Feria",
+            "username": "carlosthe19916"
+          },
+          "committer": {
+            "email": "ctron@dentrassi.de",
+            "name": "Jens Reimann",
+            "username": "ctron"
+          },
+          "distinct": true,
+          "id": "d9ee739662ac7db8272fa580daf0dcbf04577410",
+          "message": "hotfix: sbom groups list endpoint - groups param should be query param not path param\n\nSigned-off-by: Carlos Feria <2582866+carlosthe19916@users.noreply.github.com>",
+          "timestamp": "2026-02-27T10:10:17Z",
+          "tree_id": "cb6601c3d3756660eabe3afa4b4d424139495e6b",
+          "url": "https://github.com/guacsec/trustify/commit/d9ee739662ac7db8272fa580daf0dcbf04577410"
+        },
+        "date": 1772191048798,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
