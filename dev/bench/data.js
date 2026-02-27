@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1772191050642,
+  "lastUpdate": 1772192981313,
   "repoUrl": "https://github.com/guacsec/trustify",
   "entries": {
     "Benchmark": [
@@ -17365,6 +17365,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/guacsec/trustify/commit/d9ee739662ac7db8272fa580daf0dcbf04577410"
         },
         "date": 1772191048798,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 9,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "2582866+carlosthe19916@users.noreply.github.com",
+            "name": "Carlos Feria",
+            "username": "carlosthe19916"
+          },
+          "committer": {
+            "email": "carlosthe19916@gmail.com",
+            "name": "Carlos Feria",
+            "username": "carlosthe19916"
+          },
+          "distinct": true,
+          "id": "43287b2025d7f313611783eaa62b04741a1f2cbb",
+          "message": "fix: align openapi.yaml spec to actual response of read sbom group\n\nSigned-off-by: Carlos Feria <2582866+carlosthe19916@users.noreply.github.com>",
+          "timestamp": "2026-02-27T11:02:12Z",
+          "tree_id": "2bb2288ed6599c860384a889b6250216fc50832d",
+          "url": "https://github.com/guacsec/trustify/commit/43287b2025d7f313611783eaa62b04741a1f2cbb"
+        },
+        "date": 1772192980092,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
