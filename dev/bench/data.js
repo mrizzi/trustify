@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1772192981313,
+  "lastUpdate": 1772466543679,
   "repoUrl": "https://github.com/guacsec/trustify",
   "entries": {
     "Benchmark": [
@@ -17399,6 +17399,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Ingest DS3",
             "value": 9,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bxf12315@gmail.com",
+            "name": "bxf12315@gmail.com",
+            "username": "bxf12315"
+          },
+          "committer": {
+            "email": "ctron@dentrassi.de",
+            "name": "Jens Reimann",
+            "username": "ctron"
+          },
+          "distinct": false,
+          "id": "263c9454befdf64e4d774fb65cc7160a21a84da8",
+          "message": "chore: Regenerate Cargo.lock and update the license unit tests.",
+          "timestamp": "2026-03-02T15:04:56Z",
+          "tree_id": "71a9602e33408fa421b439c145b74d281f493074",
+          "url": "https://github.com/guacsec/trustify/commit/263c9454befdf64e4d774fb65cc7160a21a84da8"
+        },
+        "date": 1772466542212,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 10,
             "unit": "s"
           }
         ]
