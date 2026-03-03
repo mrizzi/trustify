@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1772536485486,
+  "lastUpdate": 1772538344365,
   "repoUrl": "https://github.com/guacsec/trustify",
   "entries": {
     "Benchmark": [
@@ -17481,6 +17481,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/guacsec/trustify/commit/7c72b6b443a5a839f4e3cb95d6692ecf7b355e40"
         },
         "date": 1772536483441,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 9,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jmorenas@redhat.com",
+            "name": "Jose Angel Morena",
+            "username": "jangel97"
+          },
+          "committer": {
+            "email": "00hf11@gmail.com",
+            "name": "Helio Frota",
+            "username": "helio-frota"
+          },
+          "distinct": true,
+          "id": "0f779a8743f2ec797db5d92412c7a6f430381cea",
+          "message": "fix: accept SHA-256 identifiers in SBOM packages and related endpoints\n\nThe /api/v2/sbom/{id}/packages and /api/v2/sbom/{id}/related endpoints\nused web::Path<Uuid>, rejecting non-UUID identifiers like sha256:xxx\nbefore the handler ran. Changed to web::Path<String> with Id::from_str()\nparsing, matching the pattern used by all other SBOM endpoints.\n\nAdded tests verifying:\n  - SHA-256 hash access returns same results as UUID access\n  - Nonexistent hashes return 404\n  - Malformed identifiers return 400\n\nSigned-off-by: Jose Angel Morena <jmorenas@redhat.com>",
+          "timestamp": "2026-03-03T10:58:34Z",
+          "tree_id": "9fff6fdaef7f86ee56b17a759e56194a70e1bbc0",
+          "url": "https://github.com/guacsec/trustify/commit/0f779a8743f2ec797db5d92412c7a6f430381cea"
+        },
+        "date": 1772538342308,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
