@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1772467022699,
+  "lastUpdate": 1772536485486,
   "repoUrl": "https://github.com/guacsec/trustify",
   "entries": {
     "Benchmark": [
@@ -17452,6 +17452,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/guacsec/trustify/commit/ccf67ed7b109f78bdbfa3211a8c504f61a682780"
         },
         "date": 1772467021061,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 9,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bxf12315@gmail.com",
+            "name": "bxf12315@gmail.com",
+            "username": "bxf12315"
+          },
+          "committer": {
+            "email": "bxf12315@gmail.com",
+            "name": "Bai Xiaofeng",
+            "username": "bxf12315"
+          },
+          "distinct": false,
+          "id": "7c72b6b443a5a839f4e3cb95d6692ecf7b355e40",
+          "message": "chore: make AI review happy",
+          "timestamp": "2026-03-03T10:19:55Z",
+          "tree_id": "3273f8e1ec3b5423061a8c65b8284296012cf72c",
+          "url": "https://github.com/guacsec/trustify/commit/7c72b6b443a5a839f4e3cb95d6692ecf7b355e40"
+        },
+        "date": 1772536483441,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
