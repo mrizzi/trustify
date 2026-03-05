@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1772724339954,
+  "lastUpdate": 1772755145057,
   "repoUrl": "https://github.com/guacsec/trustify",
   "entries": {
     "Benchmark": [
@@ -17655,6 +17655,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/guacsec/trustify/commit/d90081d6d942fec8d02d0fd01b055e3b58e2ca66"
         },
         "date": 1772724338238,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 10,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bxf12315@gmail.com",
+            "name": "bxf12315@gmail.com",
+            "username": "bxf12315"
+          },
+          "committer": {
+            "email": "bxf12315@gmail.com",
+            "name": "Bai Xiaofeng",
+            "username": "bxf12315"
+          },
+          "distinct": true,
+          "id": "50b9e8229f0e33982764317fdeb1ab1ec5abc294",
+          "message": "feat: SBOM pruning functionality",
+          "timestamp": "2026-03-05T23:07:22Z",
+          "tree_id": "8cccf31fba22ab7851cc741b9ba7c93a703aa0b8",
+          "url": "https://github.com/guacsec/trustify/commit/50b9e8229f0e33982764317fdeb1ab1ec5abc294"
+        },
+        "date": 1772755143455,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
