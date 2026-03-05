@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1772707212765,
+  "lastUpdate": 1772714959469,
   "repoUrl": "https://github.com/guacsec/trustify",
   "entries": {
     "Benchmark": [
@@ -17597,6 +17597,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/guacsec/trustify/commit/8e912cfddd379ab9244ad4357f548dead3e900b0"
         },
         "date": 1772707211137,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 10,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ctron@dentrassi.de",
+            "name": "Jens Reimann",
+            "username": "ctron"
+          },
+          "committer": {
+            "email": "ctron@dentrassi.de",
+            "name": "Jens Reimann",
+            "username": "ctron"
+          },
+          "distinct": true,
+          "id": "6ff50ba1537b5c7457fcac668c835357d6dcecf9",
+          "message": "fix(container): install tzdata for xtask container",
+          "timestamp": "2026-03-05T12:07:09Z",
+          "tree_id": "2a0b4c58078743a910c094177de7dd6d8c7eb640",
+          "url": "https://github.com/guacsec/trustify/commit/6ff50ba1537b5c7457fcac668c835357d6dcecf9"
+        },
+        "date": 1772714958247,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
