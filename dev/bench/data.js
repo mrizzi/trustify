@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1772714959469,
+  "lastUpdate": 1772724339954,
   "repoUrl": "https://github.com/guacsec/trustify",
   "entries": {
     "Benchmark": [
@@ -17626,6 +17626,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/guacsec/trustify/commit/6ff50ba1537b5c7457fcac668c835357d6dcecf9"
         },
         "date": 1772714958247,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 10,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "00hf11@gmail.com",
+            "name": "Helio Frota",
+            "username": "helio-frota"
+          },
+          "committer": {
+            "email": "00hf11@gmail.com",
+            "name": "Helio Frota",
+            "username": "helio-frota"
+          },
+          "distinct": true,
+          "id": "d90081d6d942fec8d02d0fd01b055e3b58e2ca66",
+          "message": "ci: skip benchmark coverage when changes happens in etc",
+          "timestamp": "2026-03-05T14:38:07Z",
+          "tree_id": "e6bb7a5fe1b74c71af8b2d3014221325bcc219ae",
+          "url": "https://github.com/guacsec/trustify/commit/d90081d6d942fec8d02d0fd01b055e3b58e2ca66"
+        },
+        "date": 1772724338238,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
