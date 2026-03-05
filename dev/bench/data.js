@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1772625150607,
+  "lastUpdate": 1772707212765,
   "repoUrl": "https://github.com/guacsec/trustify",
   "entries": {
     "Benchmark": [
@@ -17568,6 +17568,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/guacsec/trustify/commit/8f70c6e7c908a50e52a9a713df6a43fab632c6f6"
         },
         "date": 1772625149177,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 10,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "lucarval@redhat.com",
+            "name": "Luiz Carvalho",
+            "username": "lcarva"
+          },
+          "committer": {
+            "email": "ctron@dentrassi.de",
+            "name": "Jens Reimann",
+            "username": "ctron"
+          },
+          "distinct": true,
+          "id": "8e912cfddd379ab9244ad4357f548dead3e900b0",
+          "message": "fix: implement numeric sorting for vulnerability IDs\n\nVulnerability IDs (e.g., CVE-2024-12345) contain numeric segments that\nshould be sorted numerically rather than lexicographically. This change\nadds a generated database column that stores a normalized sort key where\nnumeric segments are zero-padded to 19 digits (the max defined in the\nCVE ID spec), enabling proper numeric ordering.\n\nImplementation uses a PostgreSQL STORED generated column with an index,\nwhich provides:\n- Automatic computation and maintenance of sort keys for all rows\n- Efficient indexed sorting without runtime overhead\n- Single source of truth for the normalization logic\n\nfixes #1811\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nSigned-off-by: Luiz Carvalho <lucarval@redhat.com>",
+          "timestamp": "2026-03-05T09:39:25Z",
+          "tree_id": "4d73cc40793c3edbf4ac5511f711296dc5d32c07",
+          "url": "https://github.com/guacsec/trustify/commit/8e912cfddd379ab9244ad4357f548dead3e900b0"
+        },
+        "date": 1772707211137,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
