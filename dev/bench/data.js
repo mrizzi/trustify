@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1773152203578,
+  "lastUpdate": 1773306594052,
   "repoUrl": "https://github.com/guacsec/trustify",
   "entries": {
     "Benchmark": [
@@ -17742,6 +17742,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/guacsec/trustify/commit/15757bf568abf3dea73b73557811b55581e821ba"
         },
         "date": 1773152201755,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 9,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mrizzi@redhat.com",
+            "name": "mrizzi",
+            "username": "mrizzi"
+          },
+          "committer": {
+            "email": "ctron@dentrassi.de",
+            "name": "Jens Reimann",
+            "username": "ctron"
+          },
+          "distinct": true,
+          "id": "dd31daeb98ad0353ae69994755fb0e2a01347ca5",
+          "message": "fix(license): add missing test data file for partial LicenseRef- match test (TC-3591)\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+          "timestamp": "2026-03-12T08:13:40Z",
+          "tree_id": "b3f4faee89b4f0d539bcb7062555cf5e87e1b1be",
+          "url": "https://github.com/guacsec/trustify/commit/dd31daeb98ad0353ae69994755fb0e2a01347ca5"
+        },
+        "date": 1773306591776,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
