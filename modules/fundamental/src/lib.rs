@@ -1,6 +1,7 @@
 #![recursion_limit = "256"]
 
 pub mod advisory;
+pub mod ai_model;
 pub mod common;
 pub mod db;
 pub mod endpoints;

@@ -8,6 +8,7 @@ pub use query::*;
 
 use crate::{
     Error,
+    ai_model::{model::AiModelSummary, service::AiModelService},
     common::{LicenseRefMapping, service::delete_doc},
     db::DatabaseExt,
     license::{
@@ -70,7 +71,8 @@ pub fn configure(
         .service(label::update)
         .service(label::all)
         .service(get_unique_licenses)
-        .service(get_license_export);
+        .service(get_license_export)
+        .service(sbom_ai_models);
 }
 
 const CONTENT_TYPE_GZIP: &str = "application/gzip";
@@ -367,6 +369,36 @@ pub async fn packages(
     let tx = db.begin_read().await?;
     let result = fetch
         .fetch_sbom_packages(id.into_inner(), search, paginated, &tx)
+        .await?;
+
+    Ok(HttpResponse::Ok().json(result))
+}
+
+/// List AI model components within an SBOM
+#[utoipa::path(
+    tag = "sbom",
+    operation_id = "listSbomAiModels",
+    params(
+        ("id", Path, description = "ID of the SBOM to get AI models for"),
+        Query,
+        Paginated,
+    ),
+    responses(
+        (status = 200, description = "AI model components", body = PaginatedResults<AiModelSummary>),
+    ),
+)]
+#[get("/v2/sbom/{id}/ai-models")]
+pub async fn sbom_ai_models(
+    ai_model_service: web::Data<AiModelService>,
+    db: web::Data<Database>,
+    id: web::Path<Uuid>,
+    web::Query(search): web::Query<Query>,
+    web::Query(paginated): web::Query<Paginated>,
+    _: Require<ReadSbom>,
+) -> actix_web::Result<impl Responder> {
+    let tx = db.begin_read().await?;
+    let result = ai_model_service
+        .list_ai_models_for_sbom(id.into_inner(), search, paginated, &tx)
         .await?;
 
     Ok(HttpResponse::Ok().json(result))
