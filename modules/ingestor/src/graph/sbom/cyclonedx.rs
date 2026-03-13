@@ -4,9 +4,10 @@ use crate::{
         product::ProductInformation,
         purl::creator::PurlCreator,
         sbom::{
-            CycloneDx as CycloneDxProcessor, LicenseCreator, LicenseInfo, NodeInfoParam,
-            PackageCreator, PackageLicensenInfo, PackageReference, References, RelationshipCreator,
-            SbomContext, SbomInformation,
+            AiModelCreator, AiModelInfo, CycloneDx as CycloneDxProcessor, LicenseCreator,
+            LicenseInfo, NodeInfoParam, PackageCreator, PackageLicensenInfo, PackageReference,
+            References, RelationshipCreator, SbomContext, SbomInformation,
+            extract_external_refs, extract_model_properties, extract_supplier_name,
             processor::{
                 InitContext, PostContext, Processor, RedHatProductComponentRelationships,
                 RunProcessors,
@@ -295,6 +296,7 @@ impl<'a> Creator<'a> {
             CycloneDxProcessor,
         );
         let mut licenses = LicenseCreator::new();
+        let mut ai_models = AiModelCreator::new(self.sbom_id);
 
         for comp in self.components {
             let creator = ComponentCreator::new(
@@ -303,6 +305,7 @@ impl<'a> Creator<'a> {
                 &mut licenses,
                 &mut packages,
                 &mut relationships,
+                &mut ai_models,
             );
             creator.create(comp);
         }
@@ -338,6 +341,7 @@ impl<'a> Creator<'a> {
         purls.create(db).await?;
         cpes.create(db).await?;
         packages.create(db).await?;
+        ai_models.create(db).await?;
         relationships.create(db).await?;
 
         // done
@@ -352,6 +356,7 @@ struct ComponentCreator<'a> {
     licenses: &'a mut LicenseCreator,
     packages: &'a mut PackageCreator,
     relationships: &'a mut RelationshipCreator<CycloneDxProcessor>,
+    ai_models: &'a mut AiModelCreator,
 
     refs: Vec<PackageReference>,
 }
@@ -363,6 +368,7 @@ impl<'a> ComponentCreator<'a> {
         licenses: &'a mut LicenseCreator,
         packages: &'a mut PackageCreator,
         relationships: &'a mut RelationshipCreator<CycloneDxProcessor>,
+        ai_models: &'a mut AiModelCreator,
     ) -> Self {
         Self {
             cpes,
@@ -371,6 +377,7 @@ impl<'a> ComponentCreator<'a> {
             refs: Default::default(),
             packages,
             relationships,
+            ai_models,
         }
     }
 
@@ -450,6 +457,55 @@ impl<'a> ComponentCreator<'a> {
             comp.hashes.clone().into_iter().flatten(),
         );
 
+        // Extract AI model data for machine-learning-model components
+        if comp.type_ == "machine-learning-model" {
+            let model_params = comp
+                .model_card
+                .as_ref()
+                .and_then(|mc| mc.model_parameters.as_ref());
+
+            let model_type = model_params
+                .and_then(|mp| mp.architecture_family.clone());
+
+            let primary_task = model_params
+                .and_then(|mp| mp.task.clone());
+
+            let supplier = extract_supplier_name(
+                comp.supplier.as_ref(),
+                comp.manufacturer.as_ref(),
+            );
+
+            let license = comp
+                .licenses
+                .as_ref()
+                .and_then(|l| match l {
+                    LicenseChoiceUrl::Variant0(licenses) => licenses
+                        .first()
+                        .and_then(|l| l.license.id.as_ref().or(l.license.name.as_ref()).cloned()),
+                    LicenseChoiceUrl::Variant1(licenses) => {
+                        licenses.first().map(|l| l.expression.clone())
+                    }
+                });
+
+            let properties = comp
+                .model_card
+                .as_ref()
+                .and_then(|mc| extract_model_properties(mc.properties.as_ref()));
+
+            let external_references =
+                extract_external_refs(comp.external_references.as_ref());
+
+            self.ai_models.add(AiModelInfo {
+                node_id: node_id.clone(),
+                model_type,
+                primary_task,
+                supplier,
+                license,
+                properties,
+                external_references,
+            });
+        }
+
         for ancestor in comp
             .pedigree
             .iter()
@@ -468,6 +524,7 @@ impl<'a> ComponentCreator<'a> {
                 self.licenses,
                 self.packages,
                 self.relationships,
+                self.ai_models,
             ));
 
             creator.create(ancestor);
@@ -495,6 +552,7 @@ impl<'a> ComponentCreator<'a> {
                 self.licenses,
                 self.packages,
                 self.relationships,
+                self.ai_models,
             ));
 
             creator.create(variant);

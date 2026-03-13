@@ -1,3 +1,4 @@
+mod ai_model;
 mod checksum;
 mod external;
 mod file;
@@ -7,6 +8,7 @@ mod node;
 mod package;
 mod relationship;
 
+pub use ai_model::*;
 pub use checksum::*;
 pub use external::*;
 pub use file::*;
