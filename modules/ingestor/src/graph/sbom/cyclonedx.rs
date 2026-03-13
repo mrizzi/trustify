@@ -20,15 +20,15 @@ use sbom_walker::{
     model::sbom::serde_cyclonedx::Sbom,
     report::{ReportSink, check},
 };
-use sea_orm::ConnectionTrait;
+use sea_orm::{ActiveModelTrait, ConnectionTrait, Set};
 use serde_cyclonedx::cyclonedx::v_1_6::{
     Component, ComponentEvidenceIdentity, CycloneDx, LicenseChoiceUrl, OrganizationalContact,
 };
-use std::{borrow::Cow, str::FromStr};
+use std::{borrow::Cow, collections::HashMap, str::FromStr};
 use time::{OffsetDateTime, format_description::well_known::Iso8601};
 use tracing::instrument;
 use trustify_common::{cpe::Cpe, purl::Purl};
-use trustify_entity::relationship::Relationship;
+use trustify_entity::{ai_model_component, labels::Labels, relationship::Relationship};
 use uuid::Uuid;
 
 /// Marker we use for identifying the document itself.
@@ -295,6 +295,7 @@ impl<'a> Creator<'a> {
             CycloneDxProcessor,
         );
         let mut licenses = LicenseCreator::new();
+        let mut ai_models = AiModelComponentCreator::new(self.sbom_id);
 
         for comp in self.components {
             let creator = ComponentCreator::new(
@@ -303,6 +304,7 @@ impl<'a> Creator<'a> {
                 &mut licenses,
                 &mut packages,
                 &mut relationships,
+                &mut ai_models,
             );
             creator.create(comp);
         }
@@ -339,6 +341,7 @@ impl<'a> Creator<'a> {
         cpes.create(db).await?;
         packages.create(db).await?;
         relationships.create(db).await?;
+        ai_models.create(db).await?;
 
         // done
 
@@ -352,6 +355,7 @@ struct ComponentCreator<'a> {
     licenses: &'a mut LicenseCreator,
     packages: &'a mut PackageCreator,
     relationships: &'a mut RelationshipCreator<CycloneDxProcessor>,
+    ai_models: &'a mut AiModelComponentCreator,
 
     refs: Vec<PackageReference>,
 }
@@ -363,6 +367,7 @@ impl<'a> ComponentCreator<'a> {
         licenses: &'a mut LicenseCreator,
         packages: &'a mut PackageCreator,
         relationships: &'a mut RelationshipCreator<CycloneDxProcessor>,
+        ai_models: &'a mut AiModelComponentCreator,
     ) -> Self {
         Self {
             cpes,
@@ -371,6 +376,7 @@ impl<'a> ComponentCreator<'a> {
             refs: Default::default(),
             packages,
             relationships,
+            ai_models,
         }
     }
 
@@ -450,6 +456,11 @@ impl<'a> ComponentCreator<'a> {
             comp.hashes.clone().into_iter().flatten(),
         );
 
+        // Extract AI model metadata for machine-learning-model components
+        if comp.type_ == "machine-learning-model" {
+            self.ai_models.add(&node_id, comp);
+        }
+
         for ancestor in comp
             .pedigree
             .iter()
@@ -468,6 +479,7 @@ impl<'a> ComponentCreator<'a> {
                 self.licenses,
                 self.packages,
                 self.relationships,
+                self.ai_models,
             ));
 
             creator.create(ancestor);
@@ -495,6 +507,7 @@ impl<'a> ComponentCreator<'a> {
                 self.licenses,
                 self.packages,
                 self.relationships,
+                self.ai_models,
             ));
 
             creator.create(variant);
@@ -548,5 +561,94 @@ impl<'a> ComponentCreator<'a> {
             }
         }
         license_uuid
+    }
+}
+
+/// Creator for AI model component records extracted from CycloneDX AIBOMs.
+struct AiModelComponentCreator {
+    sbom_id: Uuid,
+    models: Vec<ai_model_component::ActiveModel>,
+}
+
+impl AiModelComponentCreator {
+    pub fn new(sbom_id: Uuid) -> Self {
+        Self {
+            sbom_id,
+            models: Vec::new(),
+        }
+    }
+
+    pub fn add(&mut self, node_id: &str, comp: &Component) {
+        let model_type = comp
+            .model_card
+            .as_ref()
+            .and_then(|mc| mc.model_parameters.as_ref())
+            .and_then(|mp| mp.architecture_family.clone());
+
+        let primary_task = comp
+            .model_card
+            .as_ref()
+            .and_then(|mc| mc.model_parameters.as_ref())
+            .and_then(|mp| mp.task.clone());
+
+        let supplier = comp
+            .supplier
+            .as_ref()
+            .or(comp.manufacturer.as_ref())
+            .and_then(|org| org.name.clone());
+
+        let license = comp
+            .model_card
+            .as_ref()
+            .and_then(|mc| mc.properties.as_ref())
+            .and_then(|props| {
+                props
+                    .iter()
+                    .find(|p| p.name == "licenses")
+                    .and_then(|p| p.value.clone())
+            });
+
+        let properties = comp.model_card.as_ref().and_then(|mc| {
+            mc.properties.as_ref().map(|props| {
+                Labels(
+                    props
+                        .iter()
+                        .filter_map(|p| p.value.as_ref().map(|v| (p.name.clone(), v.clone())))
+                        .collect::<HashMap<String, String>>(),
+                )
+            })
+        });
+
+        let external_references = comp.external_references.as_ref().map(|refs| {
+            Labels(
+                refs.iter()
+                    .map(|r| {
+                        let url = match &r.url {
+                            serde_json::Value::String(s) => s.clone(),
+                            other => other.to_string(),
+                        };
+                        (r.type_.clone(), url)
+                    })
+                    .collect::<HashMap<String, String>>(),
+            )
+        });
+
+        self.models.push(ai_model_component::ActiveModel {
+            sbom_id: Set(self.sbom_id),
+            node_id: Set(node_id.to_string()),
+            model_type: Set(model_type),
+            primary_task: Set(primary_task),
+            supplier: Set(supplier),
+            license: Set(license),
+            properties: Set(properties),
+            external_references: Set(external_references),
+        });
+    }
+
+    pub async fn create(self, db: &impl ConnectionTrait) -> Result<(), Error> {
+        for model in self.models {
+            model.insert(db).await.map_err(Error::Db)?;
+        }
+        Ok(())
     }
 }
