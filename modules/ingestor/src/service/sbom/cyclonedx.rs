@@ -125,8 +125,10 @@ fn extract_labels(components: Option<&Vec<Component>>, labels_in: Labels) -> Lab
 mod test {
     use crate::service::{Cache, IngestorService};
     use crate::{graph::Graph, service::Format};
+    use sea_orm::EntityTrait;
     use test_context::test_context;
     use test_log::test;
+    use trustify_entity::ai_model_component;
     use trustify_test_context::{TrustifyContext, document_bytes};
 
     #[test_context(TrustifyContext)]
@@ -148,6 +150,15 @@ mod test {
             )
             .await
             .expect("must ingest");
+
+        // Verify no AI model components are created for non-AIBOM SBOMs
+        let models = ai_model_component::Entity::find()
+            .all(&ctx.db)
+            .await?;
+        assert!(
+            models.is_empty(),
+            "non-AIBOM ingestion should not create AI model records"
+        );
 
         Ok(())
     }
@@ -172,6 +183,23 @@ mod test {
             .await
             .expect("must ingest");
 
+        // Verify AI model data was stored
+        let models = ai_model_component::Entity::find()
+            .all(&ctx.db)
+            .await?;
+        assert_eq!(models.len(), 1, "expected one AI model component");
+
+        let model = &models[0];
+        assert_eq!(model.model_type.as_deref(), Some("transformer"));
+        assert_eq!(model.primary_task.as_deref(), Some("text-generation"));
+        assert_eq!(model.supplier.as_deref(), Some("nvidia"));
+        assert_eq!(model.license.as_deref(), Some("cc-by-4.0"));
+        assert!(model.properties.is_some());
+        assert!(model.external_references.is_some());
+
+        let ext_refs = model.external_references.as_ref().unwrap();
+        assert!(ext_refs.0.contains_key("website"));
+
         Ok(())
     }
 
@@ -195,6 +223,20 @@ mod test {
             )
             .await
             .expect("must ingest");
+
+        // Verify AI model data was stored
+        let models = ai_model_component::Entity::find()
+            .all(&ctx.db)
+            .await?;
+        assert_eq!(models.len(), 1, "expected one AI model component");
+
+        let model = &models[0];
+        assert_eq!(model.model_type.as_deref(), Some("transformer"));
+        assert_eq!(model.primary_task.as_deref(), Some("text-generation"));
+        assert_eq!(model.supplier.as_deref(), Some("ibm-granite"));
+        assert_eq!(model.license.as_deref(), Some("apache-2.0"));
+        assert!(model.properties.is_some());
+        assert!(model.external_references.is_some());
 
         Ok(())
     }
