@@ -56,6 +56,12 @@ pub enum Relation {
         on_condition = r#"super::package_relates_to_package::Column::Relationship.eq(crate::relationship::Relationship::Describes)"#
     )]
     DescribesSbom,
+    #[sea_orm(
+        belongs_to = "super::ai_model_component::Entity",
+        from = "(Column::SbomId, Column::NodeId)",
+        to = "(super::ai_model_component::Column::SbomId, super::ai_model_component::Column::NodeId)"
+    )]
+    AiModelComponent,
 }
 
 impl Related<super::sbom_package::Entity> for Entity {
@@ -85,6 +91,12 @@ impl Related<super::sbom::Entity> for Entity {
 impl Related<super::package_relates_to_package::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::DescribesSbom.def()
+    }
+}
+
+impl Related<super::ai_model_component::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::AiModelComponent.def()
     }
 }
 
