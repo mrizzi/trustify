@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1773306594052,
+  "lastUpdate": 1773742388918,
   "repoUrl": "https://github.com/guacsec/trustify",
   "entries": {
     "Benchmark": [
@@ -17771,6 +17771,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/guacsec/trustify/commit/dd31daeb98ad0353ae69994755fb0e2a01347ca5"
         },
         "date": 1773306591776,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 9,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "bxf12315@gmail.com",
+            "name": "bxf12315@gmail.com",
+            "username": "bxf12315"
+          },
+          "committer": {
+            "email": "ctron@dentrassi.de",
+            "name": "Jens Reimann",
+            "username": "ctron"
+          },
+          "distinct": true,
+          "id": "309aca3cd2acfebf6e2df630024726d13e644cf8",
+          "message": "fix: recursion limit issue",
+          "timestamp": "2026-03-17T09:14:56Z",
+          "tree_id": "9ad4a6c38b15b089d665e96be3e83da447bc1787",
+          "url": "https://github.com/guacsec/trustify/commit/309aca3cd2acfebf6e2df630024726d13e644cf8"
+        },
+        "date": 1773742386781,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
