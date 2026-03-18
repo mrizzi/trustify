@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1773763460965,
+  "lastUpdate": 1773836448634,
   "repoUrl": "https://github.com/guacsec/trustify",
   "entries": {
     "Benchmark": [
@@ -17858,6 +17858,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/guacsec/trustify/commit/43685c7578e2f053797cbc6ea96e9e3875dd69d4"
         },
         "date": 1773763459110,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 9,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "86094767+mrrajan@users.noreply.github.com",
+            "name": "mrrajan",
+            "username": "mrrajan"
+          },
+          "committer": {
+            "email": "86094767+mrrajan@users.noreply.github.com",
+            "name": "Rajan Ravi",
+            "username": "mrrajan"
+          },
+          "distinct": true,
+          "id": "2abb2a4b27fd9b4cf41a4520f8d95970328fa63b",
+          "message": "Remove unnecessary transactiontraits\n\nSigned-off-by: mrrajan <86094767+mrrajan@users.noreply.github.com.>",
+          "timestamp": "2026-03-18T11:35:44Z",
+          "tree_id": "dbb629fede5be0010517d140d8a7f2701bc43d4d",
+          "url": "https://github.com/guacsec/trustify/commit/2abb2a4b27fd9b4cf41a4520f8d95970328fa63b"
+        },
+        "date": 1773836447382,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
