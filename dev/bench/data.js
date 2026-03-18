@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1773836448634,
+  "lastUpdate": 1773850522949,
   "repoUrl": "https://github.com/guacsec/trustify",
   "entries": {
     "Benchmark": [
@@ -17892,6 +17892,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Ingest DS3",
             "value": 9,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jim@crossleys.org",
+            "name": "Jim Crossley",
+            "username": "jcrossley3"
+          },
+          "committer": {
+            "email": "jim@crossleys.org",
+            "name": "Jim Crossley",
+            "username": "jcrossley3"
+          },
+          "distinct": true,
+          "id": "16dab1dff358303300dc377855d3b99209a993b6",
+          "message": "Add a tad more clarity to Constraint::Display",
+          "timestamp": "2026-03-18T15:26:39Z",
+          "tree_id": "8fb39f9f43f2eb43fc485127100837ca312b471c",
+          "url": "https://github.com/guacsec/trustify/commit/16dab1dff358303300dc377855d3b99209a993b6"
+        },
+        "date": 1773850521429,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 10,
             "unit": "s"
           }
         ]
