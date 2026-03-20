@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1773850522949,
+  "lastUpdate": 1774002305004,
   "repoUrl": "https://github.com/guacsec/trustify",
   "entries": {
     "Benchmark": [
@@ -17916,6 +17916,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/guacsec/trustify/commit/16dab1dff358303300dc377855d3b99209a993b6"
         },
         "date": 1773850521429,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 10,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "86094767+mrrajan@users.noreply.github.com",
+            "name": "mrrajan",
+            "username": "mrrajan"
+          },
+          "committer": {
+            "email": "ctron@dentrassi.de",
+            "name": "Jens Reimann",
+            "username": "ctron"
+          },
+          "distinct": true,
+          "id": "fc8d690c771fc79019ac3f90c376b0a021a7e664",
+          "message": "extract extra_values binding and simplify extract_scopes with extend\n\nSigned-off-by: mrrajan <86094767+mrrajan@users.noreply.github.com.>",
+          "timestamp": "2026-03-20T09:39:24Z",
+          "tree_id": "0a652858e4b14e3e62120759078c1963de181d52",
+          "url": "https://github.com/guacsec/trustify/commit/fc8d690c771fc79019ac3f90c376b0a021a7e664"
+        },
+        "date": 1774002303374,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
