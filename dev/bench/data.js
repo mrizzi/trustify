@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1774002305004,
+  "lastUpdate": 1774256466120,
   "repoUrl": "https://github.com/guacsec/trustify",
   "entries": {
     "Benchmark": [
@@ -17950,6 +17950,34 @@ window.BENCHMARK_DATA = {
           {
             "name": "Ingest DS3",
             "value": 10,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "nhimasree@guidewire.com",
+            "name": "Nichenametla Hima Sree"
+          },
+          "committer": {
+            "email": "ctron@dentrassi.de",
+            "name": "Jens Reimann",
+            "username": "ctron"
+          },
+          "distinct": false,
+          "id": "fa9cdfd201e5150aeab1f873c5b03d229912e7b1",
+          "message": "fix: update cvss-rs version to 0.3.0 to resolve parsing issues",
+          "timestamp": "2026-03-23T08:04:18Z",
+          "tree_id": "245933e7f2c3a9414b03bd4a374861321b383706",
+          "url": "https://github.com/guacsec/trustify/commit/fa9cdfd201e5150aeab1f873c5b03d229912e7b1"
+        },
+        "date": 1774256464399,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 9,
             "unit": "s"
           }
         ]
