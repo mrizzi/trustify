@@ -143,6 +143,51 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
+        // Indexes on foreign-key columns
+        manager
+            .create_index(
+                Index::create()
+                    .if_not_exists()
+                    .table(RiskAssessment::Table)
+                    .name("idx-risk_assessment-group_id")
+                    .col(RiskAssessment::GroupId)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .if_not_exists()
+                    .table(RiskAssessmentDocument::Table)
+                    .name("idx-risk_assessment_document-risk_assessment_id")
+                    .col(RiskAssessmentDocument::RiskAssessmentId)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .if_not_exists()
+                    .table(RiskAssessmentDocument::Table)
+                    .name("idx-risk_assessment_document-source_document_id")
+                    .col(RiskAssessmentDocument::SourceDocumentId)
+                    .to_owned(),
+            )
+            .await?;
+
+        manager
+            .create_index(
+                Index::create()
+                    .if_not_exists()
+                    .table(RiskAssessmentCriteria::Table)
+                    .name("idx-risk_assessment_criteria-document_id")
+                    .col(RiskAssessmentCriteria::DocumentId)
+                    .to_owned(),
+            )
+            .await?;
+
         Ok(())
     }
 
