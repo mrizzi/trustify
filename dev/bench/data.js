@@ -1,6 +1,6 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1774256466120,
-  "repoUrl": "https://github.com/guacsec/trustify",
+  "lastUpdate": 1774611303219,
+  "repoUrl": "https://github.com/mrizzi/trustify",
   "entries": {
     "Benchmark": [
       {
@@ -17978,6 +17978,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Ingest DS3",
             "value": 9,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mrizzi@redhat.com",
+            "name": "mrizzi",
+            "username": "mrizzi"
+          },
+          "committer": {
+            "email": "mrizzi@users.noreply.github.com",
+            "name": "Marco Rizzi",
+            "username": "mrizzi"
+          },
+          "distinct": true,
+          "id": "581f83bd8f6f60801ec1cbff20f842d341415668",
+          "message": "fix(migration): add indexes for FK columns in risk assessment tables\n\nAdd explicit Index::create() with .if_not_exists() for all foreign-key\ncolumns: risk_assessment.group_id, risk_assessment_document.risk_assessment_id,\nrisk_assessment_document.source_document_id, and\nrisk_assessment_criteria.document_id.\n\nImplements JIRAPLAY-1383\n\nAssisted-by: Claude Code",
+          "timestamp": "2026-03-27T12:18:25+01:00",
+          "tree_id": "c412f8efb842d3dd3783e0e5556a706d4d6274d6",
+          "url": "https://github.com/mrizzi/trustify/commit/581f83bd8f6f60801ec1cbff20f842d341415668"
+        },
+        "date": 1774611301521,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 10,
             "unit": "s"
           }
         ]
