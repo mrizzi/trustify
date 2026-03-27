@@ -2313,6 +2313,214 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PurlDetails'
+  /api/v2/risk-assessment:
+    post:
+      tags:
+      - risk-assessment
+      summary: Create a new risk assessment for a group
+      operationId: createRiskAssessment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRiskAssessmentRequest'
+        required: true
+      responses:
+        '201':
+          description: Created the risk assessment
+          headers:
+            location:
+              schema:
+                type: string
+              description: The relative URL to the created resource
+          content:
+            application/json:
+              schema: {}
+        '400':
+          description: The request was not valid
+        '401':
+          description: The user was not authenticated
+        '403':
+          description: The user authenticated, but not authorized for this operation
+  /api/v2/risk-assessment/group/{groupId}:
+    get:
+      tags:
+      - risk-assessment
+      summary: Get risk assessments for a group
+      operationId: listRiskAssessmentsByGroup
+      parameters:
+      - name: groupId
+        in: path
+        description: The ID of the group
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Risk assessments for the group
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RiskAssessment'
+        '400':
+          description: The request was not valid
+        '401':
+          description: The user was not authenticated
+        '403':
+          description: The user authenticated, but not authorized for this operation
+  /api/v2/risk-assessment/{id}:
+    get:
+      tags:
+      - risk-assessment
+      summary: Get risk assessment details
+      operationId: readRiskAssessment
+      parameters:
+      - name: id
+        in: path
+        description: The ID of the risk assessment
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The risk assessment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskAssessment'
+        '400':
+          description: The request was not valid
+        '401':
+          description: The user was not authenticated
+        '403':
+          description: The user authenticated, but not authorized for this operation
+        '404':
+          description: The risk assessment was not found
+    delete:
+      tags:
+      - risk-assessment
+      summary: Delete a risk assessment
+      operationId: deleteRiskAssessment
+      parameters:
+      - name: id
+        in: path
+        description: The ID of the risk assessment to delete
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: The risk assessment was deleted or did not exist
+        '400':
+          description: The request was not valid
+        '401':
+          description: The user was not authenticated
+        '403':
+          description: The user authenticated, but not authorized for this operation
+  /api/v2/risk-assessment/{id}/document/{category}:
+    get:
+      tags:
+      - risk-assessment
+      summary: Download an assessment document
+      operationId: downloadRiskAssessmentDocument
+      parameters:
+      - name: id
+        in: path
+        description: The ID of the risk assessment
+        required: true
+        schema:
+          type: string
+      - name: category
+        in: path
+        description: The document category
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The document content
+          content:
+            application/octet-stream: {}
+        '400':
+          description: The request was not valid
+        '401':
+          description: The user was not authenticated
+        '403':
+          description: The user authenticated, but not authorized for this operation
+        '404':
+          description: The document was not found
+    post:
+      tags:
+      - risk-assessment
+      summary: Upload a document for an assessment category
+      operationId: uploadRiskAssessmentDocument
+      parameters:
+      - name: id
+        in: path
+        description: The ID of the risk assessment
+        required: true
+        schema:
+          type: string
+      - name: category
+        in: path
+        description: The document category
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/octet-stream:
+            schema:
+              type: array
+              items:
+                type: integer
+                format: int32
+                minimum: 0
+        required: true
+      responses:
+        '201':
+          description: The document was uploaded
+          content:
+            application/json:
+              schema: {}
+        '400':
+          description: The request was not valid
+        '401':
+          description: The user was not authenticated
+        '403':
+          description: The user authenticated, but not authorized for this operation
+        '404':
+          description: The risk assessment was not found
+  /api/v2/risk-assessment/{id}/results:
+    get:
+      tags:
+      - risk-assessment
+      summary: Get scoring results for a risk assessment
+      operationId: getRiskAssessmentResults
+      parameters:
+      - name: id
+        in: path
+        description: The ID of the risk assessment
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The assessment results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskAssessmentResults'
+        '400':
+          description: The request was not valid
+        '401':
+          description: The user was not authenticated
+        '403':
+          description: The user authenticated, but not authorized for this operation
+        '404':
+          description: The risk assessment was not found
   /api/v2/sbom:
     get:
       tags:
@@ -3988,6 +4196,24 @@ components:
         size_human:
           $ref: '#/components/schemas/ByteSizeDef'
           description: A human-readable version of `size`
+    CategoryResult:
+      type: object
+      required:
+      - category
+      - documentId
+      - processed
+      - criteria
+      properties:
+        category:
+          type: string
+        criteria:
+          type: array
+          items:
+            $ref: '#/components/schemas/CriterionResult'
+        documentId:
+          type: string
+        processed:
+          type: boolean
     ClearlyDefinedCurationImporter:
       allOf:
       - $ref: '#/components/schemas/CommonImporter'
@@ -4056,6 +4282,34 @@ components:
         id:
           type: string
           description: The ID of the newly created group
+    CreateRiskAssessmentRequest:
+      type: object
+      required:
+      - groupId
+      properties:
+        groupId:
+          type: string
+    CriterionResult:
+      type: object
+      required:
+      - id
+      - criterion
+      - completeness
+      - riskLevel
+      - score
+      properties:
+        completeness:
+          type: string
+        criterion:
+          type: string
+        details: {}
+        id:
+          type: string
+        riskLevel:
+          type: string
+        score:
+          type: number
+          format: double
     CsafImporter:
       allOf:
       - $ref: '#/components/schemas/CommonImporter'
@@ -5454,6 +5708,49 @@ components:
             properties:
               name:
                 type: string
+    RiskAssessment:
+      type: object
+      required:
+      - id
+      - groupId
+      - status
+      - createdAt
+      - updatedAt
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+        groupId:
+          type: string
+        id:
+          type: string
+        overallScore:
+          type:
+          - number
+          - 'null'
+          format: double
+        status:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+    RiskAssessmentResults:
+      type: object
+      required:
+      - assessmentId
+      - categories
+      properties:
+        assessmentId:
+          type: string
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryResult'
+        overallScore:
+          type:
+          - number
+          - 'null'
+          format: double
     SbomAdvisory:
       allOf:
       - $ref: '#/components/schemas/AdvisoryHead'
