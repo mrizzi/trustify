@@ -109,6 +109,15 @@ permission! {
         #[strum(serialize = "delete.sbomGroup")]
         DeleteSbomGroup,
 
+        #[strum(serialize = "create.riskAssessment")]
+        CreateRiskAssessment,
+        #[strum(serialize = "read.riskAssessment")]
+        ReadRiskAssessment,
+        #[strum(serialize = "update.riskAssessment")]
+        UpdateRiskAssessment,
+        #[strum(serialize = "delete.riskAssessment")]
+        DeleteRiskAssessment,
+
         #[strum(serialize = "upload.dataset")]
         UploadDataset,
 
