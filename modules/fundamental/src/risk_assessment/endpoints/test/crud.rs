@@ -153,6 +153,19 @@ async fn list_by_group(ctx: &TrustifyContext) -> Result<(), anyhow::Error> {
     let assessments = result.as_array().expect("must be array");
     assert_eq!(assessments.len(), 2);
 
+    for assessment in assessments {
+        assert_eq!(
+            assessment["groupId"].as_str(),
+            Some(group_id.as_str()),
+            "assessment groupId must match requested group"
+        );
+        assert_eq!(
+            assessment["status"].as_str(),
+            Some("pending"),
+            "assessment status must be pending"
+        );
+    }
+
     Ok(())
 }
 
