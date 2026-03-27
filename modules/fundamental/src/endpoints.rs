@@ -20,7 +20,10 @@ pub fn configure(
     storage: impl Into<DispatchBackend>,
     analysis: AnalysisService,
 ) {
-    let ingestor_service = IngestorService::new(Graph::new(db.clone()), storage, Some(analysis));
+    let storage: DispatchBackend = storage.into();
+
+    let ingestor_service =
+        IngestorService::new(Graph::new(db.clone()), storage.clone(), Some(analysis));
     svc.app_data(web::Data::new(ingestor_service));
 
     crate::advisory::endpoints::configure(svc, db.clone(), config.advisory_upload_limit);
@@ -31,6 +34,7 @@ pub fn configure(
     crate::sbom::endpoints::configure(svc, db.clone(), config.sbom_upload_limit);
     crate::vulnerability::endpoints::configure(svc, db.clone());
     crate::weakness::endpoints::configure(svc, db.clone());
+    crate::risk_assessment::endpoints::configure(svc, db.clone(), storage);
     crate::sbom_group::endpoints::configure(svc, db, config.max_group_name_length);
 }
 
