@@ -69,6 +69,7 @@ deepsize = "0.2.0"
 dotenvy = "0.15.7"
 fixedbitset = "0.5.7"
 flate2 = "1.0.35"
+fortified-llm-client = { git = "https://github.com/mrizzi/fortified-llm-client.git", version = "0.1.0" }
 fs4 = "0.13.1"
 futures = "0.3.30"
 futures-util = "0.3"

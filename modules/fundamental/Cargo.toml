@@ -24,6 +24,7 @@ async-trait = { workspace = true }
 cpe = { workspace = true }
 csv = { workspace = true }
 flate2 ={ workspace = true }
+fortified-llm-client = { workspace = true }
 futures-util = { workspace = true }
 hex = { workspace = true }
 isx = { workspace = true }
@@ -82,6 +83,7 @@ sha2 = { workspace = true }
 spdx-rs = { workspace = true }
 strum = { workspace = true }
 tar = { workspace = true }
+temp-env = { workspace = true }
 test-context = { workspace = true }
 test-log = { workspace = true, features = ["log", "trace"] }
 tokio-util = { workspace = true }
