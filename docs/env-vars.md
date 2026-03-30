@@ -53,6 +53,12 @@
 | `TRUSTD_STORAGE_STRATEGY`                | Specifies the storage strategy to use                                               | `File system`                           |
 | `UI_CLIENT_ID`                           | Client ID used by the UI                                                            | `frontend`                              |
 | `UI_ISSUER_URL`                          | Issuer URL used by the UI                                                           | `http://localhost:8090/realms/trustify` |
+| `TRUSTD_LLM_API_URL`                     | LLM API endpoint URL (enables LLM-based document processing when set with MODEL)   |                                         |
+| `TRUSTD_LLM_MODEL`                       | LLM model identifier (e.g., `llama3`, `gpt-4`)                                     |                                         |
+| `TRUSTD_LLM_API_KEY`                     | API key for LLM authentication                                                      |                                         |
+| `TRUSTD_LLM_TEMPERATURE`                | Sampling temperature for LLM responses                                               | `0.2`                                   |
+| `TRUSTD_LLM_TIMEOUT_SECS`               | Request timeout in seconds for LLM calls                                             | `120`                                   |
+| `TRUSTD_LLM_MAX_TOKENS`                 | Maximum tokens to generate in LLM response                                           |                                         |
 | `UI_SCOPE`                               | Scopes to request                                                                   | `openid`                                |
 
 ## Development 
