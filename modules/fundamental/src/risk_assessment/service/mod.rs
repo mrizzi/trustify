@@ -1,3 +1,9 @@
+#[cfg(test)]
+mod test_document_processor;
+
+pub mod document_processor;
+pub mod llm_config;
+
 use crate::Error;
 use crate::risk_assessment::model::*;
 use hex::ToHex;
@@ -11,11 +17,22 @@ use trustify_entity::{
 };
 use uuid::Uuid;
 
-pub struct RiskAssessmentService;
+use self::llm_config::LlmConfig;
+
+pub struct RiskAssessmentService {
+    llm_config: Option<LlmConfig>,
+}
 
 impl RiskAssessmentService {
     pub fn new() -> Self {
-        Self
+        Self {
+            llm_config: LlmConfig::from_env(),
+        }
+    }
+
+    /// Returns whether LLM-based document processing is enabled.
+    pub fn processing_enabled(&self) -> bool {
+        self.llm_config.is_some()
     }
 
     pub async fn create(
@@ -210,5 +227,67 @@ impl RiskAssessmentService {
             overall_score: assessment.overall_score,
             categories,
         }))
+    }
+
+    /// Process a document: extract PDF text, evaluate with LLM, and store results.
+    ///
+    /// The `pdf_path` should point to a temporary file containing the PDF content
+    /// retrieved from storage.
+    pub async fn process_document(
+        &self,
+        assessment_id: &str,
+        document_id: &str,
+        pdf_path: &std::path::Path,
+        db: &impl ConnectionTrait,
+    ) -> Result<Vec<Uuid>, Error> {
+        let config = self
+            .llm_config
+            .as_ref()
+            .ok_or_else(|| Error::Internal("LLM processing is not configured".to_string()))?;
+
+        let doc_uuid = Uuid::parse_str(document_id)
+            .map_err(|_| Error::BadRequest("Invalid document ID".into(), None))?;
+
+        let assessment_uuid = Uuid::parse_str(assessment_id)
+            .map_err(|_| Error::BadRequest("Invalid assessment ID".into(), None))?;
+
+        // Verify document exists
+        risk_assessment_document::Entity::find_by_id(doc_uuid)
+            .one(db)
+            .await?
+            .ok_or_else(|| Error::NotFound(document_id.to_string()))?;
+
+        // Extract text from PDF
+        let text = document_processor::extract_text_from_pdf(pdf_path).await?;
+
+        // Evaluate against NIST 800-30 criteria
+        let evaluation = document_processor::evaluate_document(config, &text).await?;
+
+        // Store criteria results
+        let ids = document_processor::store_criteria_results(doc_uuid, &evaluation, db).await?;
+
+        // Mark document as processed
+        let doc_update = risk_assessment_document::ActiveModel {
+            id: Set(doc_uuid),
+            processed: Set(true),
+            ..Default::default()
+        };
+        doc_update.update(db).await?;
+
+        // Compute overall score as average of all criteria scores
+        let total: f64 = evaluation.criteria.values().map(|c| c.score).sum();
+        let count = evaluation.criteria.len() as f64;
+        let overall_score = if count > 0.0 { total / count } else { 0.0 };
+
+        let assessment_update = risk_assessment::ActiveModel {
+            id: Set(assessment_uuid),
+            overall_score: Set(Some(overall_score)),
+            status: Set("completed".to_string()),
+            updated_at: Set(OffsetDateTime::now_utc()),
+            ..Default::default()
+        };
+        assessment_update.update(db).await?;
+
+        Ok(ids)
     }
 }

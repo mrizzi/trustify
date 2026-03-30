@@ -1,0 +1,5 @@
+Please evaluate the following Security Architecture Review (SAR) document against the NIST 800-30 risk assessment criteria.
+
+Document content:
+
+{document_text}
