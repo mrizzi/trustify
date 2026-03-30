@@ -3,6 +3,7 @@ mod test_document_processor;
 
 pub mod document_processor;
 pub mod llm_config;
+pub mod scoring;
 
 use crate::Error;
 use crate::risk_assessment::model::*;
@@ -222,10 +223,13 @@ impl RiskAssessmentService {
             });
         }
 
+        let scoring_result = scoring::compute_scoring_result(&categories);
+
         Ok(Some(RiskAssessmentResults {
             assessment_id: assessment.id.to_string(),
             overall_score: assessment.overall_score,
             categories,
+            scoring: Some(scoring_result),
         }))
     }
 
@@ -274,10 +278,14 @@ impl RiskAssessmentService {
         };
         doc_update.update(db).await?;
 
-        // Compute overall score as average of all criteria scores
-        let total: f64 = evaluation.criteria.values().map(|c| c.score).sum();
-        let count = evaluation.criteria.len() as f64;
-        let overall_score = if count > 0.0 { total / count } else { 0.0 };
+        // Recompute weighted overall score across all categories
+        let results = self
+            .get_results(assessment_id, db)
+            .await?
+            .ok_or_else(|| Error::NotFound(assessment_id.to_string()))?;
+
+        let scoring_result = scoring::compute_scoring_result(&results.categories);
+        let overall_score = scoring_result.overall.score;
 
         let assessment_update = risk_assessment::ActiveModel {
             id: Set(assessment_uuid),

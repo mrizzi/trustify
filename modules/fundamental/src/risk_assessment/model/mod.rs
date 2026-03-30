@@ -40,6 +40,7 @@ pub struct RiskAssessmentResults {
     pub assessment_id: String,
     pub overall_score: Option<f64>,
     pub categories: Vec<CategoryResult>,
+    pub scoring: Option<ScoringResult>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
@@ -60,4 +61,30 @@ pub struct CriterionResult {
     pub risk_level: String,
     pub score: f64,
     pub details: Option<serde_json::Value>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CategoryScore {
+    pub category: String,
+    pub score: f64,
+    pub weight: f64,
+    pub weighted_score: f64,
+    pub risk_level: String,
+    pub criteria_count: usize,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct OverallScore {
+    pub score: f64,
+    pub risk_level: String,
+    pub missing_categories: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ScoringResult {
+    pub overall: OverallScore,
+    pub categories: Vec<CategoryScore>,
 }
