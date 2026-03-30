@@ -8740,6 +8740,7 @@ dependencies = [
  "strum 0.27.2",
  "tar",
  "temp-env",
+ "tempfile",
  "test-context",
  "test-log",
  "thiserror 2.0.18",

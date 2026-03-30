@@ -7,6 +7,7 @@ use actix_web::{HttpRequest, HttpResponse, Responder, delete, get, post, web};
 use futures_util::stream::TryStreamExt;
 use sea_orm::TransactionTrait;
 use serde_json::json;
+use std::io::Write;
 use trustify_auth::{
     CreateRiskAssessment, DeleteRiskAssessment, ReadRiskAssessment, authorizer::Require,
 };
@@ -203,6 +204,21 @@ async fn upload_document(
                 .await
         })
         .await?;
+
+    // If LLM processing is configured, evaluate the document
+    if service.processing_enabled() {
+        let mut tmp = tempfile::NamedTempFile::new()
+            .map_err(|e| Error::Internal(format!("Failed to create temp file: {e}")))?;
+        tmp.write_all(&body)
+            .map_err(|e| Error::Internal(format!("Failed to write temp file: {e}")))?;
+
+        db.transaction(async |tx| {
+            service
+                .process_document(&assessment_id, &doc_id, tmp.path(), tx)
+                .await
+        })
+        .await?;
+    }
 
     Ok(HttpResponse::Created().json(json!({"id": doc_id})))
 }
