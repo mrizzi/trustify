@@ -4333,6 +4333,32 @@ components:
           type: string
         processed:
           type: boolean
+    CategoryScore:
+      type: object
+      required:
+      - category
+      - score
+      - weight
+      - weightedScore
+      - riskLevel
+      - criteriaCount
+      properties:
+        category:
+          type: string
+        criteriaCount:
+          type: integer
+          minimum: 0
+        riskLevel:
+          type: string
+        score:
+          type: number
+          format: double
+        weight:
+          type: number
+          format: double
+        weightedScore:
+          type: number
+          format: double
     ClearlyDefinedCurationImporter:
       allOf:
       - $ref: '#/components/schemas/CommonImporter'
@@ -4947,6 +4973,22 @@ components:
               format: int32
               minimum: 0
             uniqueItems: true
+    OverallScore:
+      type: object
+      required:
+      - score
+      - riskLevel
+      - missingCategories
+      properties:
+        missingCategories:
+          type: array
+          items:
+            type: string
+        riskLevel:
+          type: string
+        score:
+          type: number
+          format: double
     PaginatedResults_AdvisorySummary:
       type: object
       required:
@@ -5952,6 +5994,10 @@ components:
           - number
           - 'null'
           format: double
+        scoring:
+          oneOf:
+          - type: 'null'
+          - $ref: '#/components/schemas/ScoringResult'
     SbomAdvisory:
       allOf:
       - $ref: '#/components/schemas/AdvisoryHead'
@@ -6187,6 +6233,18 @@ components:
       - CVSS v3.0 score
       - CVSS v3.1 score
       - CVSS v4.0 score
+    ScoringResult:
+      type: object
+      required:
+      - overall
+      - categories
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryScore'
+        overall:
+          $ref: '#/components/schemas/OverallScore'
     Severity:
       type: string
       description: |-
