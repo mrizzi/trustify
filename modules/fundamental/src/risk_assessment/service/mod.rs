@@ -9,7 +9,8 @@ use crate::Error;
 use crate::risk_assessment::model::*;
 use hex::ToHex;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, Set, query::QueryFilter,
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DbErr, EntityTrait, Set, TransactionError,
+    TransactionTrait, query::QueryFilter,
 };
 use time::OffsetDateTime;
 use trustify_common::{db::DatabaseErrors, hashing::Digests};
@@ -105,13 +106,16 @@ impl RiskAssessmentService {
         Ok(result.rows_affected > 0)
     }
 
+    /// Upload a document to a risk assessment, creating a source document record
+    /// and linking it via a risk assessment document. Handles duplicate source
+    /// documents by reusing the existing row (matched by SHA256).
     pub async fn upload_document(
         &self,
         assessment_id: &str,
         category: &str,
         digests: &Digests,
         size: usize,
-        db: &impl ConnectionTrait,
+        db: &(impl ConnectionTrait + TransactionTrait),
     ) -> Result<String, Error> {
         let assessment_uuid = Uuid::parse_str(assessment_id)
             .map_err(|_| Error::BadRequest("Invalid assessment ID".into(), None))?;
@@ -122,32 +126,89 @@ impl RiskAssessmentService {
             .await?
             .ok_or_else(|| Error::NotFound(assessment_id.to_string()))?;
 
-        // Create source document record
+        let sha256_hex: String = digests.sha256.encode_hex();
+
+        // Create source document record, handling duplicates via nested transaction
+        // following the pattern from Graph::create_doc.
         let source_doc = source_document::ActiveModel {
             id: Default::default(),
-            sha256: Set(digests.sha256.encode_hex()),
+            sha256: Set(sha256_hex.clone()),
             sha384: Set(digests.sha384.encode_hex()),
             sha512: Set(digests.sha512.encode_hex()),
             size: Set(size as i64),
             ingested: Set(OffsetDateTime::now_utc()),
         };
 
-        let source_doc = source_doc.insert(db).await?;
+        // Run in a nested transaction so that a duplicate key error does not
+        // abort the caller's transaction.
+        let result = db
+            .transaction::<_, _, DbErr>(|txn| {
+                Box::pin(async move { source_document::Entity::insert(source_doc).exec(txn).await })
+            })
+            .await;
 
-        // Create risk assessment document record
+        let source_document_id = match result {
+            Ok(res) => res.last_insert_id,
+            Err(TransactionError::Transaction(err)) if err.is_duplicate() => {
+                // Duplicate SHA256 — look up the existing source document
+                source_document::Entity::find()
+                    .filter(source_document::Column::Sha256.eq(&sha256_hex))
+                    .one(db)
+                    .await?
+                    .ok_or_else(|| {
+                        Error::Internal("source document vanished after duplicate detection".into())
+                    })?
+                    .id
+            }
+            Err(TransactionError::Transaction(err)) => return Err(err.into()),
+            Err(TransactionError::Connection(err)) => return Err(err.into()),
+        };
+
+        // Create risk assessment document record, handling the case where the
+        // same document was already uploaded to this assessment+category.
         let doc_id = Uuid::now_v7();
         let doc = risk_assessment_document::ActiveModel {
             id: Set(doc_id),
             risk_assessment_id: Set(assessment_uuid),
             category: Set(category.to_string()),
-            source_document_id: Set(source_doc.id),
+            source_document_id: Set(source_document_id),
             processed: Set(false),
             uploaded_at: Set(OffsetDateTime::now_utc()),
         };
 
-        doc.insert(db).await?;
+        let result = db
+            .transaction::<_, _, DbErr>(|txn| {
+                Box::pin(async move {
+                    risk_assessment_document::Entity::insert(doc).exec(txn).await
+                })
+            })
+            .await;
 
-        Ok(doc_id.to_string())
+        match result {
+            Ok(res) => Ok(res.last_insert_id.to_string()),
+            Err(TransactionError::Transaction(err)) if err.is_duplicate() => {
+                // Same document already uploaded to this assessment+category —
+                // return the existing record's ID.
+                let existing = risk_assessment_document::Entity::find()
+                    .filter(
+                        risk_assessment_document::Column::RiskAssessmentId.eq(assessment_uuid),
+                    )
+                    .filter(risk_assessment_document::Column::Category.eq(category))
+                    .filter(
+                        risk_assessment_document::Column::SourceDocumentId.eq(source_document_id),
+                    )
+                    .one(db)
+                    .await?
+                    .ok_or_else(|| {
+                        Error::Internal(
+                            "risk assessment document vanished after duplicate detection".into(),
+                        )
+                    })?;
+                Ok(existing.id.to_string())
+            }
+            Err(TransactionError::Transaction(err)) => Err(err.into()),
+            Err(TransactionError::Connection(err)) => Err(err.into()),
+        }
     }
 
     pub async fn get_document_metadata(
