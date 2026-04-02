@@ -187,7 +187,7 @@ impl RiskAssessmentService {
             .await;
 
         match result {
-            Ok(res) => Ok(res.last_insert_id.to_string()),
+            Ok(_) => Ok(doc_id.to_string()),
             Err(TransactionError::Transaction(err)) if err.is_duplicate() => {
                 // Same document already uploaded to this assessment+category —
                 // return the existing record's ID.
