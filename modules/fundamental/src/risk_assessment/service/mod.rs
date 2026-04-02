@@ -179,7 +179,9 @@ impl RiskAssessmentService {
         let result = db
             .transaction::<_, _, DbErr>(|txn| {
                 Box::pin(async move {
-                    risk_assessment_document::Entity::insert(doc).exec(txn).await
+                    risk_assessment_document::Entity::insert(doc)
+                        .exec(txn)
+                        .await
                 })
             })
             .await;
@@ -190,9 +192,7 @@ impl RiskAssessmentService {
                 // Same document already uploaded to this assessment+category —
                 // return the existing record's ID.
                 let existing = risk_assessment_document::Entity::find()
-                    .filter(
-                        risk_assessment_document::Column::RiskAssessmentId.eq(assessment_uuid),
-                    )
+                    .filter(risk_assessment_document::Column::RiskAssessmentId.eq(assessment_uuid))
                     .filter(risk_assessment_document::Column::Category.eq(category))
                     .filter(
                         risk_assessment_document::Column::SourceDocumentId.eq(source_document_id),
