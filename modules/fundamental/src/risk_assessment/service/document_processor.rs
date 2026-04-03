@@ -152,13 +152,20 @@ pub async fn store_criteria_results(
             risk_level: Set(risk_level),
             score: Set(score),
             details: Set(None),
-            what_documented: Set(Some(serde_json::to_value(&criterion.what_documented)
-                .map_err(|e| Error::Internal(format!("Failed to serialize what_documented: {e}")))?)),
-            gaps: Set(Some(serde_json::to_value(&criterion.gaps)
-                .map_err(|e| Error::Internal(format!("Failed to serialize gaps: {e}")))?)),
+            what_documented: Set(Some(
+                serde_json::to_value(&criterion.what_documented).map_err(|e| {
+                    Error::Internal(format!("Failed to serialize what_documented: {e}"))
+                })?,
+            )),
+            gaps: Set(Some(serde_json::to_value(&criterion.gaps).map_err(
+                |e| Error::Internal(format!("Failed to serialize gaps: {e}")),
+            )?)),
             impact_description: Set(Some(criterion.impact.clone())),
-            recommendations: Set(Some(serde_json::to_value(&criterion.recommendations)
-                .map_err(|e| Error::Internal(format!("Failed to serialize recommendations: {e}")))?)),
+            recommendations: Set(Some(
+                serde_json::to_value(&criterion.recommendations).map_err(|e| {
+                    Error::Internal(format!("Failed to serialize recommendations: {e}"))
+                })?,
+            )),
         };
         model.insert(db).await?;
         ids.push(id);
