@@ -133,19 +133,10 @@ impl MigrationTrait for Migration {
                             .not_null(),
                     )
                     .col(ColumnDef::new(RiskAssessmentCriteria::Details).json_binary())
-                    .col(
-                        ColumnDef::new(RiskAssessmentCriteria::WhatDocumented)
-                            .json_binary(),
-                    )
+                    .col(ColumnDef::new(RiskAssessmentCriteria::WhatDocumented).json_binary())
                     .col(ColumnDef::new(RiskAssessmentCriteria::Gaps).json_binary())
-                    .col(
-                        ColumnDef::new(RiskAssessmentCriteria::ImpactDescription)
-                            .string(),
-                    )
-                    .col(
-                        ColumnDef::new(RiskAssessmentCriteria::Recommendations)
-                            .json_binary(),
-                    )
+                    .col(ColumnDef::new(RiskAssessmentCriteria::ImpactDescription).string())
+                    .col(ColumnDef::new(RiskAssessmentCriteria::Recommendations).json_binary())
                     .foreign_key(
                         ForeignKey::create()
                             .from_col(RiskAssessmentCriteria::DocumentId)
