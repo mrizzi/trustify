@@ -159,3 +159,60 @@ Any files modified by steps 1–2 (e.g., `openapi.yaml`, JSON schema files) must
 - Drop operations use `.if_exists()`
 - Raw SQL loaded via `include_str!("migration_dir/up.sql")`
 - Data migrations are separate from schema migrations, run via `trustd db data <names>`
+
+## Shared Table Insert Pattern (Duplicate Key Handling)
+
+When inserting into a table that has unique constraints and is shared across multiple
+modules, use a **nested transaction** to catch duplicate key errors and fall back to
+looking up the existing row. This prevents the duplicate key error from aborting the
+caller's transaction.
+
+### When to use
+
+Any insert into a table with unique constraints where concurrent or repeated inserts
+are expected. The canonical example is the `source_document` table, but the pattern
+applies to any shared table with uniqueness guarantees.
+
+### How to implement
+
+1. Wrap the insert in a **nested transaction** (`connection.transaction(...)`) so that
+   a constraint violation rolls back only the inner transaction, not the outer one.
+2. On success, return the newly created row ID.
+3. On error, match `Err(TransactionError::Transaction(DbErr::Query(err)))` and check
+   whether the error message contains `"duplicate key value violates unique constraint"`.
+4. If it is a duplicate, look up the existing row by its unique column and return it.
+5. Propagate any other error normally.
+
+### Reference implementation
+
+The authoritative implementation is `Graph::create_doc` in
+`modules/ingestor/src/graph/mod.rs` (lines 52–101):
+
+```rust
+let result = connection
+    .transaction::<_, _, DbErr>(|txn| {
+        Box::pin(async move { source_document::Entity::insert(doc_model).exec(txn).await })
+    })
+    .await;
+
+match result {
+    Ok(doc) => Ok(CreateOutcome::Created(doc.last_insert_id)),
+    Err(TransactionError::Transaction(DbErr::Query(err)))
+        if err
+            .to_string()
+            .contains("duplicate key value violates unique constraint") =>
+    {
+        // look up the existing row by unique column and return it
+    }
+    Err(TransactionError::Transaction(err)) => Err(err.into()),
+    Err(TransactionError::Connection(err)) => Err(err.into()),
+}
+```
+
+### Shared infrastructure: `source_document`
+
+The `source_document` table is shared infrastructure used by multiple modules —
+including **ingestor**, **advisory**, **sbom**, and **risk_assessment**. All code paths
+that insert into `source_document` must use the nested-transaction duplicate-handling
+pattern described above. Failing to do so will cause unhandled constraint violations
+under concurrent ingestion.
