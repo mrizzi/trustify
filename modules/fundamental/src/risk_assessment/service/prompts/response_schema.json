@@ -1,0 +1,364 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SAR Completeness Evaluation",
+  "description": "Structured output schema for Security Architecture Review completeness evaluation following NIST SP 800-30 methodology",
+  "type": "object",
+  "required": [
+    "criteria_assessments",
+    "risk_assessments",
+    "risk_prioritization"
+  ],
+  "properties": {
+    "criteria_assessments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "number",
+          "name",
+          "rating",
+          "what_documented",
+          "gaps",
+          "impact",
+          "recommendations"
+        ],
+        "properties": {
+          "number": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string",
+            "description": "Criterion name (e.g., 'System Scope and Boundaries')"
+          },
+          "rating": {
+            "type": "string",
+            "enum": [
+              "complete",
+              "partial",
+              "missing"
+            ],
+            "description": "ONLY use these three values: complete (80-100% of expected elements), partial (30-79%), missing (<30%)"
+          },
+          "what_documented": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of what IS documented in the SAR"
+          },
+          "gaps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of what is MISSING or incomplete"
+          },
+          "impact": {
+            "type": "string",
+            "description": "Impact on NIST 800-30 system characterization"
+          },
+          "recommendations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "action",
+                "priority"
+              ],
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "description": "Specific action to address gap"
+                },
+                "priority": {
+                  "type": "string",
+                  "enum": [
+                    "critical",
+                    "high",
+                    "medium",
+                    "low"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "risk_assessments": {
+      "type": "array",
+      "description": "NIST 800-30 risk assessments for criteria rated partial or missing",
+      "items": {
+        "type": "object",
+        "required": [
+          "criterion_number",
+          "criterion_name",
+          "completeness_rating",
+          "threat_scenarios",
+          "likelihood",
+          "impact",
+          "risk_level"
+        ],
+        "properties": {
+          "criterion_number": {
+            "type": "integer"
+          },
+          "criterion_name": {
+            "type": "string"
+          },
+          "completeness_rating": {
+            "type": "string",
+            "enum": [
+              "partial",
+              "missing"
+            ]
+          },
+          "threat_scenarios": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "threat_source",
+                "threat_event",
+                "vulnerability",
+                "attack_path"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "threat_source": {
+                  "type": "string",
+                  "description": "NIST taxonomy reference"
+                },
+                "threat_event": {
+                  "type": "string",
+                  "description": "NIST taxonomy reference"
+                },
+                "vulnerability": {
+                  "type": "string",
+                  "description": "What gap creates this vulnerability"
+                },
+                "attack_path": {
+                  "type": "string",
+                  "description": "Step-by-step attack sequence"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "likelihood": {
+            "type": "object",
+            "required": [
+              "score",
+              "level",
+              "rationale"
+            ],
+            "properties": {
+              "score": {
+                "type": "integer"
+              },
+              "level": {
+                "type": "string",
+                "enum": [
+                  "very_low",
+                  "low",
+                  "moderate",
+                  "high",
+                  "very_high"
+                ]
+              },
+              "rationale": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "impact": {
+            "type": "object",
+            "required": [
+              "score",
+              "level",
+              "rationale",
+              "domains"
+            ],
+            "properties": {
+              "score": {
+                "type": "integer"
+              },
+              "level": {
+                "type": "string",
+                "enum": [
+                  "very_low",
+                  "low",
+                  "moderate",
+                  "high",
+                  "very_high"
+                ]
+              },
+              "rationale": {
+                "type": "string",
+                "description": "Why this score, include financial estimates"
+              },
+              "domains": {
+                "type": "object",
+                "required": [
+                  "confidentiality",
+                  "integrity",
+                  "availability",
+                  "privacy",
+                  "safety"
+                ],
+                "properties": {
+                  "confidentiality": {
+                    "type": "integer"
+                  },
+                  "integrity": {
+                    "type": "integer"
+                  },
+                  "availability": {
+                    "type": "integer"
+                  },
+                  "privacy": {
+                    "type": "integer"
+                  },
+                  "safety": {
+                    "type": "integer"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          },
+          "risk_level": {
+            "type": "object",
+            "required": [
+              "score",
+              "level",
+              "matrix_reference"
+            ],
+            "properties": {
+              "score": {
+                "type": "number",
+                "description": "(likelihood + impact) / 2"
+              },
+              "level": {
+                "type": "string",
+                "enum": [
+                  "very_low",
+                  "low",
+                  "moderate",
+                  "high",
+                  "very_high"
+                ]
+              },
+              "matrix_reference": {
+                "type": "string",
+                "description": "NIST Table 3-3 reference"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "risk_prioritization": {
+      "type": "object",
+      "required": [
+        "summary",
+        "critical_gaps",
+        "top_risks"
+      ],
+      "properties": {
+        "summary": {
+          "type": "object",
+          "required": [
+            "very_high_count",
+            "high_count",
+            "moderate_count",
+            "low_count",
+            "very_low_count"
+          ],
+          "properties": {
+            "very_high_count": {
+              "type": "integer"
+            },
+            "high_count": {
+              "type": "integer"
+            },
+            "moderate_count": {
+              "type": "integer"
+            },
+            "low_count": {
+              "type": "integer"
+            },
+            "very_low_count": {
+              "type": "integer"
+            }
+          },
+          "additionalProperties": false
+        },
+        "critical_gaps": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "Criterion numbers for critical gaps (Criteria 4, 5, 9)"
+        },
+        "top_risks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "rank",
+              "criterion_number",
+              "criterion_name",
+              "risk_score",
+              "risk_level",
+              "gap_summary",
+              "priority_action"
+            ],
+            "properties": {
+              "rank": {
+                "type": "integer"
+              },
+              "criterion_number": {
+                "type": "integer"
+              },
+              "criterion_name": {
+                "type": "string"
+              },
+              "risk_score": {
+                "type": "number"
+              },
+              "risk_level": {
+                "type": "string",
+                "enum": [
+                  "very_low",
+                  "low",
+                  "moderate",
+                  "high",
+                  "very_high"
+                ]
+              },
+              "gap_summary": {
+                "type": "string"
+              },
+              "priority_action": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
