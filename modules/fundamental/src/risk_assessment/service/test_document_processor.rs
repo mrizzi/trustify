@@ -1,9 +1,9 @@
 use crate::risk_assessment::service::RiskAssessmentService;
 use crate::risk_assessment::service::document_processor::{
-    CriterionEvaluation, SarEvaluationResponse, store_criteria_results,
+    CriterionAssessment, Recommendation, RiskAssessmentEntry, RiskLevel, SarEvaluationResponse,
+    store_criteria_results,
 };
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement, TransactionTrait};
-use std::collections::HashMap;
 use test_context::test_context;
 use test_log::test;
 use trustify_test_context::TrustifyContext;
@@ -63,28 +63,44 @@ async fn test_store_criteria_results(ctx: &TrustifyContext) -> Result<(), anyhow
 
     let doc_uuid = uuid::Uuid::parse_str(&doc_id)?;
 
-    // Build a mock evaluation response
-    let mut criteria = HashMap::new();
-    criteria.insert(
-        "threat_identification".to_string(),
-        CriterionEvaluation {
-            completeness: "complete".to_string(),
-            risk_level: "low".to_string(),
-            score: 0.9,
-            details: Some(serde_json::json!({"summary": "Threats are well identified"})),
+    // Build a mock evaluation response using the new schema structure
+    let criteria_assessments = vec![
+        CriterionAssessment {
+            number: 1,
+            name: "Threat identification".to_string(),
+            rating: "complete".to_string(),
+            what_documented: vec!["Threats are well identified".to_string()],
+            gaps: vec![],
+            impact: "No significant impact".to_string(),
+            recommendations: vec![],
         },
-    );
-    criteria.insert(
-        "vulnerability_identification".to_string(),
-        CriterionEvaluation {
-            completeness: "partial".to_string(),
-            risk_level: "moderate".to_string(),
-            score: 0.6,
-            details: Some(serde_json::json!({"summary": "Some vulnerabilities missing"})),
+        CriterionAssessment {
+            number: 2,
+            name: "Vulnerability identification".to_string(),
+            rating: "partial".to_string(),
+            what_documented: vec!["Some vulnerabilities documented".to_string()],
+            gaps: vec!["Missing network vulnerability analysis".to_string()],
+            impact: "Moderate impact on risk characterization".to_string(),
+            recommendations: vec![Recommendation {
+                action: "Add network vulnerability scan results".to_string(),
+                priority: "high".to_string(),
+            }],
         },
-    );
+    ];
 
-    let evaluation = SarEvaluationResponse { criteria };
+    // Only partial/missing criteria get risk assessments
+    let risk_assessments = vec![RiskAssessmentEntry {
+        criterion_number: 2,
+        risk_level: RiskLevel {
+            score: 6.0,
+            level: "moderate".to_string(),
+        },
+    }];
+
+    let evaluation = SarEvaluationResponse {
+        criteria_assessments,
+        risk_assessments,
+    };
 
     // Store and verify
     let ids = store_criteria_results(doc_uuid, &evaluation, &tx).await?;
@@ -97,16 +113,27 @@ async fn test_store_criteria_results(ctx: &TrustifyContext) -> Result<(), anyhow
     assert_eq!(results.categories.len(), 1);
     assert_eq!(results.categories[0].criteria.len(), 2);
 
-    // Verify individual criterion values
+    // Verify complete criterion gets default low risk
     let threat = results.categories[0]
         .criteria
         .iter()
-        .find(|c| c.criterion == "threat_identification");
+        .find(|c| c.criterion == "Threat identification");
     assert!(threat.is_some());
     let threat = threat.unwrap();
     assert_eq!(threat.completeness, "complete");
-    assert_eq!(threat.risk_level, "low");
-    assert!((threat.score - 0.9).abs() < f64::EPSILON);
+    assert_eq!(threat.risk_level, "Low");
+    assert!((threat.score - 0.0).abs() < f64::EPSILON);
+
+    // Verify partial criterion gets risk from risk_assessments
+    let vuln = results.categories[0]
+        .criteria
+        .iter()
+        .find(|c| c.criterion == "Vulnerability identification");
+    assert!(vuln.is_some());
+    let vuln = vuln.unwrap();
+    assert_eq!(vuln.completeness, "partial");
+    assert_eq!(vuln.risk_level, "Moderate");
+    assert!((vuln.score - 6.0).abs() < f64::EPSILON);
 
     tx.rollback().await?;
     Ok(())

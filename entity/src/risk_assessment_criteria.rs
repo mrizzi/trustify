@@ -12,6 +12,10 @@ pub struct Model {
     pub risk_level: String,
     pub score: f64,
     pub details: Option<serde_json::Value>,
+    pub what_documented: Option<serde_json::Value>,
+    pub gaps: Option<serde_json::Value>,
+    pub impact_description: Option<String>,
+    pub recommendations: Option<serde_json::Value>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
