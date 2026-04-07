@@ -3,6 +3,7 @@ mod test_document_processor;
 
 pub mod document_processor;
 pub mod llm_config;
+pub mod report_generator;
 pub mod scoring;
 
 use crate::Error;
@@ -290,6 +291,125 @@ impl RiskAssessmentService {
             assessment_id: assessment.id.to_string(),
             overall_score: assessment.overall_score,
             categories,
+            scoring: Some(scoring_result),
+        }))
+    }
+
+    /// Fetch all assessment data needed to generate a PDF report, including
+    /// enriched fields (what_documented, gaps, impact, recommendations) that
+    /// are not exposed in the standard API response.
+    pub async fn get_report_data(
+        &self,
+        assessment_id: &str,
+        db: &impl ConnectionTrait,
+    ) -> Result<Option<report_generator::ReportData>, Error> {
+        let assessment_uuid = Uuid::parse_str(assessment_id)
+            .map_err(|_| Error::BadRequest("Invalid assessment ID".into(), None))?;
+
+        let assessment = risk_assessment::Entity::find_by_id(assessment_uuid)
+            .one(db)
+            .await?;
+
+        let Some(assessment) = assessment else {
+            return Ok(None);
+        };
+
+        let documents = risk_assessment_document::Entity::find()
+            .filter(risk_assessment_document::Column::RiskAssessmentId.eq(assessment_uuid))
+            .all(db)
+            .await?;
+
+        // Build category results for scoring (using existing CriterionResult)
+        let mut scoring_categories = Vec::with_capacity(documents.len());
+        // Build report categories with enriched fields
+        let mut report_categories = Vec::with_capacity(documents.len());
+
+        for doc in documents {
+            let criteria = risk_assessment_criteria::Entity::find()
+                .filter(risk_assessment_criteria::Column::DocumentId.eq(doc.id))
+                .all(db)
+                .await?;
+
+            // Scoring needs the standard CriterionResult
+            scoring_categories.push(crate::risk_assessment::model::CategoryResult {
+                category: doc.category.clone(),
+                document_id: doc.id.to_string(),
+                processed: doc.processed,
+                criteria: criteria
+                    .iter()
+                    .map(|c| crate::risk_assessment::model::CriterionResult {
+                        id: c.id.to_string(),
+                        criterion: c.criterion.clone(),
+                        completeness: c.completeness.clone(),
+                        risk_level: c.risk_level.clone(),
+                        score: c.score,
+                        details: c.details.clone(),
+                    })
+                    .collect(),
+            });
+
+            // Report needs enriched data
+            report_categories.push(report_generator::ReportCategory {
+                category: doc.category,
+                criteria: criteria
+                    .into_iter()
+                    .map(|c| {
+                        let what_documented = c
+                            .what_documented
+                            .and_then(|v| serde_json::from_value::<Vec<String>>(v).ok())
+                            .unwrap_or_default();
+                        let gaps = c
+                            .gaps
+                            .and_then(|v| serde_json::from_value::<Vec<String>>(v).ok())
+                            .unwrap_or_default();
+                        let recommendations = c
+                            .recommendations
+                            .and_then(|v| {
+                                serde_json::from_value::<Vec<serde_json::Value>>(v).ok()
+                            })
+                            .unwrap_or_default()
+                            .into_iter()
+                            .map(|r| report_generator::ReportRecommendation {
+                                action: r
+                                    .get("action")
+                                    .and_then(|v| v.as_str())
+                                    .unwrap_or("")
+                                    .to_string(),
+                                priority: r
+                                    .get("priority")
+                                    .and_then(|v| v.as_str())
+                                    .unwrap_or("")
+                                    .to_string(),
+                            })
+                            .collect();
+
+                        report_generator::ReportCriterion {
+                            criterion: c.criterion,
+                            completeness: c.completeness,
+                            risk_level: c.risk_level,
+                            score: c.score,
+                            what_documented,
+                            gaps,
+                            impact_description: c.impact_description,
+                            recommendations,
+                            details: c.details,
+                        }
+                    })
+                    .collect(),
+            });
+        }
+
+        let scoring_result = scoring::compute_scoring_result(&scoring_categories);
+
+        Ok(Some(report_generator::ReportData {
+            assessment_id: assessment.id.to_string(),
+            group_id: assessment.group_id.to_string(),
+            status: assessment.status,
+            created_at: assessment
+                .created_at
+                .format(&time::format_description::well_known::Rfc3339)
+                .unwrap_or_else(|_| "N/A".to_string()),
+            categories: report_categories,
             scoring: Some(scoring_result),
         }))
     }
