@@ -364,9 +364,7 @@ impl RiskAssessmentService {
                             .unwrap_or_default();
                         let recommendations = c
                             .recommendations
-                            .and_then(|v| {
-                                serde_json::from_value::<Vec<serde_json::Value>>(v).ok()
-                            })
+                            .and_then(|v| serde_json::from_value::<Vec<serde_json::Value>>(v).ok())
                             .unwrap_or_default()
                             .into_iter()
                             .map(|r| report_generator::ReportRecommendation {

@@ -113,9 +113,9 @@ impl ReportWriter {
 
     /// Start a new page and reset the cursor.
     fn new_page(&mut self) {
-        let (page, layer) =
-            self.doc
-                .add_page(Mm(PAGE_WIDTH), Mm(PAGE_HEIGHT), "Layer 1");
+        let (page, layer) = self
+            .doc
+            .add_page(Mm(PAGE_WIDTH), Mm(PAGE_HEIGHT), "Layer 1");
         self.current_page = page;
         self.current_layer = layer;
         self.y = PAGE_HEIGHT - MARGIN_TOP;
@@ -131,8 +131,7 @@ impl ReportWriter {
     // ── Text helpers ────────────────────────────────────────────────────
 
     fn write_text(&self, text: &str, size: f32, x: f32, font: &IndirectFontRef) {
-        self.layer()
-            .use_text(text, size, Mm(x), Mm(self.y), font);
+        self.layer().use_text(text, size, Mm(x), Mm(self.y), font);
     }
 
     fn title(&mut self, text: &str) {
@@ -142,7 +141,7 @@ impl ReportWriter {
     }
 
     fn heading(&mut self, text: &str) {
-        self.ensure_space(LINE_HEIGHT_HEADING + 3.0);
+        self.ensure_space(3.0 + LINE_HEIGHT_HEADING + 2.0);
         self.advance(3.0);
         self.write_text(
             text,
@@ -232,10 +231,7 @@ impl ReportWriter {
         layer.set_outline_thickness(0.5);
         let points = vec![
             (Point::new(Mm(MARGIN_LEFT), Mm(self.y)), false),
-            (
-                Point::new(Mm(PAGE_WIDTH - MARGIN_RIGHT), Mm(self.y)),
-                false,
-            ),
+            (Point::new(Mm(PAGE_WIDTH - MARGIN_RIGHT), Mm(self.y)), false),
         ];
         layer.add_line(Line {
             points,
@@ -311,10 +307,7 @@ fn wrap_text(text: &str, max_chars: usize) -> Vec<String> {
 
 /// Generate a PDF report from assessment data.
 pub fn generate_report(data: &ReportData) -> Result<Vec<u8>, anyhow::Error> {
-    let mut w = ReportWriter::new(&format!(
-        "Risk Assessment Report - {}",
-        data.assessment_id
-    ))?;
+    let mut w = ReportWriter::new(&format!("Risk Assessment Report - {}", data.assessment_id))?;
 
     // ── Page 1: Executive Summary ───────────────────────────────────────
 
@@ -334,10 +327,7 @@ pub fn generate_report(data: &ReportData) -> Result<Vec<u8>, anyhow::Error> {
 
     if let Some(ref scoring) = data.scoring {
         let score_pct = scoring.overall.score * 100.0;
-        w.key_value(
-            "Overall Risk Score:  ",
-            &format!("{:.1}%", score_pct),
-        );
+        w.key_value("Overall Risk Score:  ", &format!("{:.1}%", score_pct));
         w.key_value("Risk Level:  ", &scoring.overall.risk_level);
 
         if !scoring.overall.missing_categories.is_empty() {
@@ -364,7 +354,9 @@ pub fn generate_report(data: &ReportData) -> Result<Vec<u8>, anyhow::Error> {
 
             let col_widths = [40.0, 25.0, 20.0, 30.0, 25.0, 30.0];
             w.table_row(
-                &["Category", "Score", "Weight", "Weighted", "Risk", "Criteria"],
+                &[
+                    "Category", "Score", "Weight", "Weighted", "Risk", "Criteria",
+                ],
                 &col_widths,
                 true,
             );
