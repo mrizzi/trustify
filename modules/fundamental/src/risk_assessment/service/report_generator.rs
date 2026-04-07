@@ -510,13 +510,13 @@ pub fn generate_report(data: &ReportData) -> Result<Vec<u8>, anyhow::Error> {
                 w.subheading(&cr.criterion);
 
                 // Threat scenarios
-                if let Some(scenarios) = details.get("threat_scenarios") {
-                    if let Some(arr) = scenarios.as_array() {
-                        w.bold_line("Threat Scenarios:");
-                        for scenario in arr {
-                            if let Some(s) = scenario.as_str() {
-                                w.bullet(s);
-                            }
+                if let Some(scenarios) = details.get("threat_scenarios")
+                    && let Some(arr) = scenarios.as_array()
+                {
+                    w.bold_line("Threat Scenarios:");
+                    for scenario in arr {
+                        if let Some(s) = scenario.as_str() {
+                            w.bullet(s);
                         }
                     }
                 }
