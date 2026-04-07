@@ -333,8 +333,10 @@ async fn generate_report(
         return Ok(HttpResponse::NotFound().finish());
     };
 
-    let pdf_bytes = report_generator::generate_report(&report_data)
-        .map_err(|e| Error::Internal(format!("Failed to generate PDF report: {e}")))?;
+    let pdf_bytes = report_generator::generate_report(&report_data).map_err(|e| {
+        log::error!("Failed to generate PDF report for assessment {}: {e}", &*id);
+        Error::Internal("Failed to generate PDF report".to_string())
+    })?;
 
     Ok(HttpResponse::Ok()
         .content_type("application/pdf")
