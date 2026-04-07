@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod test;
 
-use super::{model::*, service::RiskAssessmentService};
+use super::{model::*, service::RiskAssessmentService, service::report_generator};
 use crate::{Error, db::DatabaseExt};
 use actix_web::{HttpRequest, HttpResponse, Responder, delete, get, post, web};
 use futures_util::stream::TryStreamExt;
@@ -31,7 +31,8 @@ pub fn configure(
         .service(delete_assessment)
         .service(upload_document)
         .service(download_document)
-        .service(get_results);
+        .service(get_results)
+        .service(generate_report);
 }
 
 #[utoipa::path(
@@ -301,4 +302,45 @@ async fn get_results(
         Some(results) => HttpResponse::Ok().json(results),
         None => HttpResponse::NotFound().finish(),
     })
+}
+
+#[utoipa::path(
+    tag = "risk-assessment",
+    operation_id = "generateRiskAssessmentReport",
+    params(
+        ("id", Path, description = "The ID of the risk assessment"),
+    ),
+    responses(
+        (status = 200, description = "The generated PDF report", content_type = "application/pdf"),
+        (status = 400, description = "The request was not valid"),
+        (status = 401, description = "The user was not authenticated"),
+        (status = 403, description = "The user authenticated, but not authorized for this operation"),
+        (status = 404, description = "The risk assessment was not found"),
+    )
+)]
+#[get("/v2/risk-assessment/{id}/report")]
+/// Generate and download a PDF report for a risk assessment
+async fn generate_report(
+    service: web::Data<RiskAssessmentService>,
+    db: web::Data<Database>,
+    id: web::Path<String>,
+    _: Require<ReadRiskAssessment>,
+) -> Result<impl Responder, Error> {
+    let tx = db.begin_read().await?;
+    let report_data = service.get_report_data(&id, &tx).await?;
+
+    let Some(report_data) = report_data else {
+        return Ok(HttpResponse::NotFound().finish());
+    };
+
+    let pdf_bytes = report_generator::generate_report(&report_data)
+        .map_err(|e| Error::Internal(format!("Failed to generate PDF report: {e}")))?;
+
+    Ok(HttpResponse::Ok()
+        .content_type("application/pdf")
+        .append_header((
+            "Content-Disposition",
+            format!("attachment; filename=\"risk-assessment-{}.pdf\"", &*id),
+        ))
+        .body(pdf_bytes))
 }
