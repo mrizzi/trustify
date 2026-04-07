@@ -2494,6 +2494,32 @@ paths:
           description: The user authenticated, but not authorized for this operation
         '404':
           description: The risk assessment was not found
+  /api/v2/risk-assessment/{id}/report:
+    get:
+      tags:
+      - risk-assessment
+      summary: Generate and download a PDF report for a risk assessment
+      operationId: generateRiskAssessmentReport
+      parameters:
+      - name: id
+        in: path
+        description: The ID of the risk assessment
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The generated PDF report
+          content:
+            application/pdf: {}
+        '400':
+          description: The request was not valid
+        '401':
+          description: The user was not authenticated
+        '403':
+          description: The user authenticated, but not authorized for this operation
+        '404':
+          description: The risk assessment was not found
   /api/v2/risk-assessment/{id}/results:
     get:
       tags:
