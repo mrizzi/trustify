@@ -100,6 +100,7 @@ async fn test_store_criteria_results(ctx: &TrustifyContext) -> Result<(), anyhow
     let evaluation = SarEvaluationResponse {
         criteria_assessments,
         risk_assessments,
+        risk_prioritization: None,
     };
 
     // Store and verify

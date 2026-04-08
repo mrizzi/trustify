@@ -43,28 +43,38 @@ fn compute_category_score(criteria_scores: &[f64]) -> f64 {
     sum / criteria_scores.len() as f64
 }
 
-/// Compute the weighted overall score from per-category scores.
-/// Only categories with actual data are included. Weights are re-normalized
-/// to account for missing categories.
-fn compute_weighted_score(category_scores: &HashMap<String, f64>) -> f64 {
-    let weights: HashMap<&str, f64> = CATEGORY_WEIGHTS.iter().copied().collect();
+/// Compute the completeness-based overall score from all criteria across categories.
+///
+/// The score is a fraction (0.0–1.0):
+///   (complete_count * 1.0 + partial_count * 0.5) / total_criteria
+///
+/// This replaces the previous weighted-average approach. Per-category
+/// `CategoryScore` values (weight, weighted_score) remain unchanged so
+/// downstream consumers still have per-category detail.
+fn compute_completeness_score(categories: &[CategoryResult]) -> f64 {
+    let mut complete = 0usize;
+    let mut partial = 0usize;
+    let mut total = 0usize;
 
-    let mut weighted_sum = 0.0;
-    let mut total_weight = 0.0;
-
-    for (category, &score) in category_scores {
-        let weight = weights.get(category.as_str()).copied().unwrap_or(0.0);
-        if weight > 0.0 {
-            weighted_sum += score * weight;
-            total_weight += weight;
+    for cat in categories {
+        if !cat.processed || cat.criteria.is_empty() {
+            continue;
+        }
+        for criterion in &cat.criteria {
+            total += 1;
+            match criterion.completeness.as_str() {
+                "complete" => complete += 1,
+                "partial" => partial += 1,
+                _ => {} // "missing" contributes 0
+            }
         }
     }
 
-    if total_weight > 0.0 {
-        weighted_sum / total_weight
-    } else {
-        0.0
+    if total == 0 {
+        return 0.0;
     }
+
+    (complete as f64 * 1.0 + partial as f64 * 0.5) / total as f64
 }
 
 /// Compute the full scoring result from category results.
@@ -73,7 +83,7 @@ pub fn compute_scoring_result(categories: &[CategoryResult]) -> ScoringResult {
     let weights: HashMap<&str, f64> = CATEGORY_WEIGHTS.iter().copied().collect();
 
     // Compute per-category scores from processed categories with criteria
-    let mut category_scores_map: HashMap<String, f64> = HashMap::new();
+    let mut present_categories: Vec<String> = Vec::new();
     let mut scored_categories: Vec<CategoryScore> = Vec::new();
 
     for cat in categories {
@@ -86,7 +96,7 @@ pub fn compute_scoring_result(categories: &[CategoryResult]) -> ScoringResult {
         let weight = weights.get(cat.category.as_str()).copied().unwrap_or(0.0);
         let weighted = avg_score * weight;
 
-        category_scores_map.insert(cat.category.clone(), avg_score);
+        present_categories.push(cat.category.clone());
 
         scored_categories.push(CategoryScore {
             category: cat.category.clone(),
@@ -99,16 +109,14 @@ pub fn compute_scoring_result(categories: &[CategoryResult]) -> ScoringResult {
     }
 
     // Identify missing categories
-    let present: std::collections::HashSet<&str> =
-        category_scores_map.keys().map(|s| s.as_str()).collect();
     let missing: Vec<String> = ALL_CATEGORIES
         .iter()
-        .filter(|c| !present.contains(**c))
+        .filter(|c| !present_categories.iter().any(|p| p == **c))
         .map(|c| c.to_string())
         .collect();
 
-    // Compute overall weighted score (re-normalized for available categories)
-    let overall = compute_weighted_score(&category_scores_map);
+    // Compute overall completeness-based score (0.0–1.0 fraction)
+    let overall = compute_completeness_score(categories);
 
     ScoringResult {
         overall: OverallScore {
@@ -125,15 +133,23 @@ mod tests {
     use super::*;
     use crate::risk_assessment::model::{CategoryResult, CriterionResult};
 
-    fn make_criterion(name: &str, score: f64) -> CriterionResult {
+    fn make_criterion_with_completeness(
+        name: &str,
+        score: f64,
+        completeness: &str,
+    ) -> CriterionResult {
         CriterionResult {
             id: "test-id".to_string(),
             criterion: name.to_string(),
-            completeness: "complete".to_string(),
+            completeness: completeness.to_string(),
             risk_level: classify_risk_level(score).to_string(),
             score,
             details: None,
         }
+    }
+
+    fn make_criterion(name: &str, score: f64) -> CriterionResult {
+        make_criterion_with_completeness(name, score, "complete")
     }
 
     fn make_category(name: &str, scores: &[f64]) -> CategoryResult {
@@ -149,53 +165,91 @@ mod tests {
         }
     }
 
+    fn make_category_with_completeness(
+        name: &str,
+        criteria: Vec<(&str, f64, &str)>,
+    ) -> CategoryResult {
+        CategoryResult {
+            category: name.to_string(),
+            document_id: "doc-id".to_string(),
+            processed: true,
+            criteria: criteria
+                .into_iter()
+                .enumerate()
+                .map(|(i, (completeness, score, _risk))| {
+                    make_criterion_with_completeness(&format!("criterion_{i}"), score, completeness)
+                })
+                .collect(),
+        }
+    }
+
     #[test]
-    fn test_weighted_score_all_categories() {
+    fn test_completeness_score_all_complete() {
+        // All criteria are "complete" (default from make_category)
+        // 9 criteria total, all complete
+        // Score = (9 * 1.0) / 9 = 1.0
         let categories = vec![
-            make_category("pt", &[0.8, 0.6]),       // avg = 0.7, weight = 0.30
-            make_category("vex", &[0.5]),           // avg = 0.5, weight = 0.20
-            make_category("sar", &[0.9, 0.7, 0.8]), // avg = 0.8, weight = 0.20
-            make_category("dast", &[0.4]),          // avg = 0.4, weight = 0.15
-            make_category("sast", &[0.6]),          // avg = 0.6, weight = 0.10
-            make_category("threat_model", &[0.3]),  // avg = 0.3, weight = 0.05
+            make_category("pt", &[0.8, 0.6]),       // 2 complete
+            make_category("vex", &[0.5]),           // 1 complete
+            make_category("sar", &[0.9, 0.7, 0.8]), // 3 complete
+            make_category("dast", &[0.4]),          // 1 complete
+            make_category("sast", &[0.6]),          // 1 complete
+            make_category("threat_model", &[0.3]),  // 1 complete
         ];
 
         let result = compute_scoring_result(&categories);
 
-        // All categories present, no re-normalization needed
-        // Expected: 0.7*0.30 + 0.5*0.20 + 0.8*0.20 + 0.4*0.15 + 0.6*0.10 + 0.3*0.05
-        //         = 0.21 + 0.10 + 0.16 + 0.06 + 0.06 + 0.015 = 0.605
-        let expected = 0.605;
+        // All 9 criteria are "complete": (9*1.0)/9 = 1.0
+        let expected = 1.0;
         assert!(
             (result.overall.score - expected).abs() < 1e-10,
             "Expected overall score {expected}, got {}",
             result.overall.score
         );
-        assert_eq!(result.overall.risk_level, "High");
+        assert_eq!(result.overall.risk_level, "Very High");
         assert!(result.overall.missing_categories.is_empty());
         assert_eq!(result.categories.len(), 6);
     }
 
     #[test]
-    fn test_weighted_score_missing_categories() {
-        // Only PT and SAR available
-        let categories = vec![
-            make_category("pt", &[0.8]),  // avg = 0.8, weight = 0.30
-            make_category("sar", &[0.6]), // avg = 0.6, weight = 0.20
-        ];
+    fn test_completeness_score_mixed() {
+        // 2 complete, 1 partial, 1 missing = (2*1.0 + 1*0.5) / 4 = 2.5/4 = 0.625
+        let categories = vec![make_category_with_completeness(
+            "sar",
+            vec![
+                ("complete", 0.0, "Low"),
+                ("complete", 0.0, "Low"),
+                ("partial", 0.5, "Moderate"),
+                ("missing", 0.8, "High"),
+            ],
+        )];
 
         let result = compute_scoring_result(&categories);
 
-        // Re-normalized: total available weight = 0.30 + 0.20 = 0.50
-        // Weighted sum = 0.8*0.30 + 0.6*0.20 = 0.24 + 0.12 = 0.36
-        // Re-normalized overall = 0.36 / 0.50 = 0.72
-        let expected = 0.72;
+        let expected = 0.625;
         assert!(
             (result.overall.score - expected).abs() < 1e-10,
             "Expected overall score {expected}, got {}",
             result.overall.score
         );
         assert_eq!(result.overall.risk_level, "High");
+    }
+
+    #[test]
+    fn test_completeness_score_missing_categories() {
+        // Only PT and SAR available, both all complete
+        // 2 criteria total, both complete: (2*1.0)/2 = 1.0
+        let categories = vec![make_category("pt", &[0.8]), make_category("sar", &[0.6])];
+
+        let result = compute_scoring_result(&categories);
+
+        let expected = 1.0;
+        assert!(
+            (result.overall.score - expected).abs() < 1e-10,
+            "Expected overall score {expected}, got {}",
+            result.overall.score
+        );
+        assert_eq!(result.overall.risk_level, "Very High");
         assert_eq!(result.overall.missing_categories.len(), 4);
         assert!(
             result
@@ -225,19 +279,19 @@ mod tests {
 
     #[test]
     fn test_risk_level_boundaries() {
-        // Low: 0–25%
+        // Low: 0-25%
         assert_eq!(classify_risk_level(0.0), "Low");
         assert_eq!(classify_risk_level(0.25), "Low");
 
-        // Moderate: 26–50%
+        // Moderate: 26-50%
         assert_eq!(classify_risk_level(0.26), "Moderate");
         assert_eq!(classify_risk_level(0.50), "Moderate");
 
-        // High: 51–75%
+        // High: 51-75%
         assert_eq!(classify_risk_level(0.51), "High");
         assert_eq!(classify_risk_level(0.75), "High");
 
-        // Very High: 76–100%
+        // Very High: 76-100%
         assert_eq!(classify_risk_level(0.76), "Very High");
         assert_eq!(classify_risk_level(1.0), "Very High");
     }
@@ -274,5 +328,46 @@ mod tests {
                 .missing_categories
                 .contains(&"sar".to_string())
         );
+        // 1 complete criterion: (1*1.0)/1 = 1.0
+        assert!(
+            (result.overall.score - 1.0).abs() < 1e-10,
+            "Expected overall score 1.0, got {}",
+            result.overall.score
+        );
+    }
+
+    #[test]
+    fn test_completeness_score_all_missing() {
+        // All criteria are "missing"
+        let categories = vec![make_category_with_completeness(
+            "sar",
+            vec![("missing", 0.9, "Very High"), ("missing", 0.7, "High")],
+        )];
+
+        let result = compute_scoring_result(&categories);
+
+        // (0*1.0 + 0*0.5) / 2 = 0.0
+        assert!((result.overall.score).abs() < f64::EPSILON);
+        assert_eq!(result.overall.risk_level, "Low");
+    }
+
+    #[test]
+    fn test_completeness_score_all_partial() {
+        // All criteria are "partial"
+        let categories = vec![make_category_with_completeness(
+            "sar",
+            vec![("partial", 0.5, "Moderate"), ("partial", 0.6, "High")],
+        )];
+
+        let result = compute_scoring_result(&categories);
+
+        // (0*1.0 + 2*0.5) / 2 = 0.5
+        let expected = 0.5;
+        assert!(
+            (result.overall.score - expected).abs() < 1e-10,
+            "Expected overall score {expected}, got {}",
+            result.overall.score
+        );
+        assert_eq!(result.overall.risk_level, "Moderate");
     }
 }
