@@ -460,18 +460,11 @@ impl RiskAssessmentService {
         // Store criteria results
         let ids = document_processor::store_criteria_results(doc_uuid, &evaluation, db).await?;
 
-        // Store risk_prioritization on the document record
-        document_processor::store_risk_prioritization(
-            doc_uuid,
-            evaluation.risk_prioritization.as_ref(),
-            db,
-        )
-        .await?;
-
-        // Mark document as processed
+        // Mark document as processed and store risk_prioritization in a single update
         let doc_update = risk_assessment_document::ActiveModel {
             id: Set(doc_uuid),
             processed: Set(true),
+            risk_prioritization: Set(evaluation.risk_prioritization.clone()),
             ..Default::default()
         };
         doc_update.update(db).await?;

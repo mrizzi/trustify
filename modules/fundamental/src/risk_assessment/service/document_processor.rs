@@ -4,7 +4,7 @@ use sea_orm::{ActiveModelTrait, ConnectionTrait, Set};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::path::Path;
-use trustify_entity::{risk_assessment_criteria, risk_assessment_document};
+use trustify_entity::risk_assessment_criteria;
 use uuid::Uuid;
 
 use super::llm_config::LlmConfig;
@@ -173,21 +173,4 @@ pub async fn store_criteria_results(
     }
 
     Ok(ids)
-}
-
-/// Update the risk_assessment_document record with the risk_prioritization JSON.
-pub async fn store_risk_prioritization(
-    document_id: Uuid,
-    risk_prioritization: Option<&Value>,
-    db: &impl ConnectionTrait,
-) -> Result<(), Error> {
-    if let Some(rp) = risk_prioritization {
-        let doc_update = risk_assessment_document::ActiveModel {
-            id: Set(document_id),
-            risk_prioritization: Set(Some(rp.clone())),
-            ..Default::default()
-        };
-        doc_update.update(db).await?;
-    }
-    Ok(())
 }
