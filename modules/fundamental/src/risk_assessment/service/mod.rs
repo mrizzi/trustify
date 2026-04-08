@@ -175,6 +175,7 @@ impl RiskAssessmentService {
             source_document_id: Set(source_document_id),
             processed: Set(false),
             uploaded_at: Set(OffsetDateTime::now_utc()),
+            risk_prioritization: Set(None),
         };
 
         let result = db
@@ -319,12 +320,21 @@ impl RiskAssessmentService {
             .all(db)
             .await?;
 
+        // Collect risk_prioritization from the first document that has one
+        let mut risk_prioritization: Option<serde_json::Value> = None;
+
         // Build category results for scoring (using existing CriterionResult)
         let mut scoring_categories = Vec::with_capacity(documents.len());
         // Build report categories with enriched fields
         let mut report_categories = Vec::with_capacity(documents.len());
 
-        for doc in documents {
+        for doc in &documents {
+            if risk_prioritization.is_none()
+                && let Some(ref rp) = doc.risk_prioritization
+            {
+                risk_prioritization = Some(rp.clone());
+            }
+
             let criteria = risk_assessment_criteria::Entity::find()
                 .filter(risk_assessment_criteria::Column::DocumentId.eq(doc.id))
                 .all(db)
@@ -350,7 +360,7 @@ impl RiskAssessmentService {
 
             // Report needs enriched data
             report_categories.push(report_generator::ReportCategory {
-                category: doc.category,
+                category: doc.category.clone(),
                 criteria: criteria
                     .into_iter()
                     .map(|c| {
@@ -409,6 +419,7 @@ impl RiskAssessmentService {
                 .unwrap_or_else(|_| "N/A".to_string()),
             categories: report_categories,
             scoring: Some(scoring_result),
+            risk_prioritization,
         }))
     }
 
@@ -448,6 +459,14 @@ impl RiskAssessmentService {
 
         // Store criteria results
         let ids = document_processor::store_criteria_results(doc_uuid, &evaluation, db).await?;
+
+        // Store risk_prioritization on the document record
+        document_processor::store_risk_prioritization(
+            doc_uuid,
+            evaluation.risk_prioritization.as_ref(),
+            db,
+        )
+        .await?;
 
         // Mark document as processed
         let doc_update = risk_assessment_document::ActiveModel {

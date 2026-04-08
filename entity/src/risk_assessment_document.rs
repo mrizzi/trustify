@@ -13,6 +13,8 @@ pub struct Model {
     pub processed: bool,
 
     pub uploaded_at: OffsetDateTime,
+
+    pub risk_prioritization: Option<serde_json::Value>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
