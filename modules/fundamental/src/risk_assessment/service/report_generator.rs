@@ -345,7 +345,7 @@ pub fn generate_report(data: &ReportData) -> Result<Vec<u8>, anyhow::Error> {
     w.spacing(2.0);
 
     if let Some(ref scoring) = data.scoring {
-        let score_pct = scoring.overall.score * 100.0;
+        let score_pct = scoring.overall.score;
         w.key_value("Overall Score:  ", &format!("{:.1}%", score_pct));
         w.small_text("Calculated by LLM");
         w.spacing(1.0);

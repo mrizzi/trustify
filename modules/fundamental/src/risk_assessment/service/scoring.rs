@@ -22,12 +22,11 @@ const ALL_CATEGORIES: &[&str] = &["pt", "vex", "sar", "dast", "sast", "threat_mo
 ///  51–75%: High
 ///  76–100%: Very High
 fn classify_risk_level(score: f64) -> &'static str {
-    let pct = score * 100.0;
-    if pct <= 25.0 {
+    if score <= 25.0 {
         "Low"
-    } else if pct <= 50.0 {
+    } else if score <= 50.0 {
         "Moderate"
-    } else if pct <= 75.0 {
+    } else if score <= 75.0 {
         "High"
     } else {
         "Very High"
@@ -74,7 +73,7 @@ fn compute_completeness_score(categories: &[CategoryResult]) -> f64 {
         return 0.0;
     }
 
-    (complete as f64 * 1.0 + partial as f64 * 0.5) / total as f64
+    (complete as f64 * 1.0 + partial as f64 * 0.5) / total as f64 * 100.0
 }
 
 /// Compute the full scoring result from category results.
@@ -115,7 +114,7 @@ pub fn compute_scoring_result(categories: &[CategoryResult]) -> ScoringResult {
         .map(|c| c.to_string())
         .collect();
 
-    // Compute overall completeness-based score (0.0–1.0 fraction)
+    // Compute overall completeness-based score (0–100 percentage)
     let overall = compute_completeness_score(categories);
 
     ScoringResult {
@@ -199,8 +198,8 @@ mod tests {
 
         let result = compute_scoring_result(&categories);
 
-        // All 9 criteria are "complete": (9*1.0)/9 = 1.0
-        let expected = 1.0;
+        // All 9 criteria are "complete": (9*1.0)/9 * 100 = 100.0
+        let expected = 100.0;
         assert!(
             (result.overall.score - expected).abs() < 1e-10,
             "Expected overall score {expected}, got {}",
@@ -213,7 +212,7 @@ mod tests {
 
     #[test]
     fn test_completeness_score_mixed() {
-        // 2 complete, 1 partial, 1 missing = (2*1.0 + 1*0.5) / 4 = 2.5/4 = 0.625
+        // 2 complete, 1 partial, 1 missing = (2*1.0 + 1*0.5) / 4 * 100 = 62.5
         let categories = vec![make_category_with_completeness(
             "sar",
             vec![
@@ -226,7 +225,7 @@ mod tests {
 
         let result = compute_scoring_result(&categories);
 
-        let expected = 0.625;
+        let expected = 62.5;
         assert!(
             (result.overall.score - expected).abs() < 1e-10,
             "Expected overall score {expected}, got {}",
@@ -238,12 +237,12 @@ mod tests {
     #[test]
     fn test_completeness_score_missing_categories() {
         // Only PT and SAR available, both all complete
-        // 2 criteria total, both complete: (2*1.0)/2 = 1.0
+        // 2 criteria total, both complete: (2*1.0)/2 * 100 = 100.0
         let categories = vec![make_category("pt", &[0.8]), make_category("sar", &[0.6])];
 
         let result = compute_scoring_result(&categories);
 
-        let expected = 1.0;
+        let expected = 100.0;
         assert!(
             (result.overall.score - expected).abs() < 1e-10,
             "Expected overall score {expected}, got {}",
@@ -281,19 +280,19 @@ mod tests {
     fn test_risk_level_boundaries() {
         // Low: 0-25%
         assert_eq!(classify_risk_level(0.0), "Low");
-        assert_eq!(classify_risk_level(0.25), "Low");
+        assert_eq!(classify_risk_level(25.0), "Low");
 
         // Moderate: 26-50%
-        assert_eq!(classify_risk_level(0.26), "Moderate");
-        assert_eq!(classify_risk_level(0.50), "Moderate");
+        assert_eq!(classify_risk_level(26.0), "Moderate");
+        assert_eq!(classify_risk_level(50.0), "Moderate");
 
         // High: 51-75%
-        assert_eq!(classify_risk_level(0.51), "High");
-        assert_eq!(classify_risk_level(0.75), "High");
+        assert_eq!(classify_risk_level(51.0), "High");
+        assert_eq!(classify_risk_level(75.0), "High");
 
         // Very High: 76-100%
-        assert_eq!(classify_risk_level(0.76), "Very High");
-        assert_eq!(classify_risk_level(1.0), "Very High");
+        assert_eq!(classify_risk_level(76.0), "Very High");
+        assert_eq!(classify_risk_level(100.0), "Very High");
     }
 
     #[test]
@@ -328,10 +327,10 @@ mod tests {
                 .missing_categories
                 .contains(&"sar".to_string())
         );
-        // 1 complete criterion: (1*1.0)/1 = 1.0
+        // 1 complete criterion: (1*1.0)/1 * 100 = 100.0
         assert!(
-            (result.overall.score - 1.0).abs() < 1e-10,
-            "Expected overall score 1.0, got {}",
+            (result.overall.score - 100.0).abs() < 1e-10,
+            "Expected overall score 100.0, got {}",
             result.overall.score
         );
     }
@@ -361,8 +360,8 @@ mod tests {
 
         let result = compute_scoring_result(&categories);
 
-        // (0*1.0 + 2*0.5) / 2 = 0.5
-        let expected = 0.5;
+        // (0*1.0 + 2*0.5) / 2 * 100 = 50.0
+        let expected = 50.0;
         assert!(
             (result.overall.score - expected).abs() < 1e-10,
             "Expected overall score {expected}, got {}",
