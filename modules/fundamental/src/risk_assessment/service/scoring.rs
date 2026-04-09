@@ -213,7 +213,7 @@ mod tests {
 
     #[test]
     fn test_completeness_score_mixed() {
-        // 2 complete, 1 partial, 1 missing = (2*1.0 + 1*0.5) / 4 = 2.5/4 = 0.625
+        // 2 complete, 1 partial, 1 missing = (2*1.0 + 1*0.5) / 4 = 0.625
         let categories = vec![make_category_with_completeness(
             "sar",
             vec![
