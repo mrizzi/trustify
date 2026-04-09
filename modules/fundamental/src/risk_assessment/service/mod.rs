@@ -476,11 +476,12 @@ impl RiskAssessmentService {
             .ok_or_else(|| Error::NotFound(assessment_id.to_string()))?;
 
         let scoring_result = scoring::compute_scoring_result(&results.categories);
-        let overall_score = scoring_result.overall.score;
+        // Convert 0.0-1.0 fraction to 0-100 percentage for the API/UI
+        let overall_score_pct = scoring_result.overall.score * 100.0;
 
         let assessment_update = risk_assessment::ActiveModel {
             id: Set(assessment_uuid),
-            overall_score: Set(Some(overall_score)),
+            overall_score: Set(Some(overall_score_pct)),
             status: Set("completed".to_string()),
             updated_at: Set(OffsetDateTime::now_utc()),
             ..Default::default()
