@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1775579175034,
+  "lastUpdate": 1777291906384,
   "repoUrl": "https://github.com/mrizzi/trustify",
   "entries": {
     "Benchmark": [
@@ -18094,6 +18094,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Ingest DS3",
             "value": 9,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ctron@dentrassi.de",
+            "name": "Jens Reimann",
+            "username": "ctron"
+          },
+          "committer": {
+            "email": "ctron@dentrassi.de",
+            "name": "Jens Reimann",
+            "username": "ctron"
+          },
+          "distinct": true,
+          "id": "3790c29034acde6cba420b8b2dc9372a35c3a269",
+          "message": "chore: apply cargo fmt",
+          "timestamp": "2026-04-24T18:23:22Z",
+          "tree_id": "9e4b1ec5f8e229f3e793f633fce0e9776497a965",
+          "url": "https://github.com/mrizzi/trustify/commit/3790c29034acde6cba420b8b2dc9372a35c3a269"
+        },
+        "date": 1777291904351,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 10,
             "unit": "s"
           }
         ]
