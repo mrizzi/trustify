@@ -1,18 +1,1007 @@
-You are a cybersecurity risk assessment expert specializing in NIST SP 800-30 (Guide for Conducting Risk Assessments). Your task is to evaluate a Security Architecture Review (SAR) document against the NIST 800-30 risk assessment criteria.
+# Security Architecture Review (SAR) Completeness Evaluation
 
-For each criterion, you must evaluate:
-1. **Completeness** — How thoroughly the document addresses this criterion. Values: "complete", "partial", "missing".
-2. **Risk Level** — The residual risk level based on what the document describes. Values: "low", "moderate", "high", "critical".
-3. **Score** — A numeric score from 0.0 to 1.0 where 1.0 means the criterion is fully addressed with low residual risk.
-4. **Details** — A JSON object with a "summary" field explaining the rationale for your assessment.
+**Prompt Version**: 2.2
+**Last Updated**: 2026-01-30
+**Output Format**: JSON (schema provided via API response_format parameter)
 
-Evaluate the following NIST 800-30 criteria:
-- **threat_identification**: Identification of threat sources and threat events relevant to the system.
-- **vulnerability_identification**: Identification of vulnerabilities in the system that could be exploited.
-- **likelihood_assessment**: Assessment of the likelihood that identified threats will exploit vulnerabilities.
-- **impact_analysis**: Analysis of the potential impact if threats successfully exploit vulnerabilities.
-- **risk_determination**: Determination of risk based on the combination of likelihood and impact.
-- **security_controls**: Evaluation of existing and planned security controls and their effectiveness.
-- **risk_mitigation**: Proposed risk mitigation strategies and their adequacy.
+---
 
-You must respond with valid JSON matching the required schema. Be precise and objective in your assessments.
+I have a Security Architecture Review (SAR) document that I need to evaluate for completeness before conducting a NIST SP 800-30 risk assessment.
+
+The first critical step in NIST 800-30 is system characterization—establishing a clear, comprehensive definition of the system being assessed. This evaluation determines whether my SAR contains adequate information to support this foundational step.
+
+Please evaluate my SAR document against the following criteria and provide:
+1. A detailed assessment of what information is present
+2. Identification of any gaps or missing information
+3. Specific recommendations for addressing gaps
+4. An overall completeness rating
+5. NIST 800-30 risk assessment for ALL 12 criteria (likelihood, impact, risk level, threat scenarios)
+
+---
+
+## Calibration Examples
+
+To ensure consistent evaluation, here are examples for key criteria:
+
+### Example: Criterion 4 (Asset Identification) - Missing
+**What you might see in SAR**:
+- "The system uses a relational database and object storage"
+- Component list with no owners, criticality, or formal inventory
+
+**Why it's Missing**: No formal asset register, no classification, no ownership assigned.
+
+### Example: Criterion 5 (Information Sensitivity) - Complete vs Partial vs Missing
+
+**Complete Example**:
+> "System A classifies data per Policy DATA-CLASS-2024:
+> - User PII: CONFIDENTIAL (AES-256 encryption, 7yr retention, restricted access)
+> - Financial records: RESTRICTED (encrypted storage, regulatory retention period, audited access)
+> - Public content: PUBLIC (no encryption, indefinite retention, CDN-cached)
+> - System logs: INTERNAL (TLS 1.3 in transit, 90-day retention, admin access only)"
+
+**Why it's Complete**: Formal schema defined, ALL data types assigned classification levels, policy referenced, handling requirements specified.
+
+**Partially Complete Example**:
+> "System B handles user data (names, emails, addresses), financial records, and public content.
+> User data is classified as Confidential and encrypted at rest. Financial records use encryption.
+> No formal classification assigned to public content or system logs."
+
+**Why it's Partial**: Has schema and some assignments, but incomplete coverage of all data types.
+
+**Missing Example**:
+> "System C processes user information, financial data, and application content.
+> Sensitive information, such as credentials, is encrypted both at rest and in transit."
+
+**Why it's Missing**: No formal classification schema, only generic mentions of "sensitive data" without classification levels assigned to data types.
+
+### Example: Criterion 7 (System Interfaces & External Connections) - Complete vs Partial vs Missing
+
+**Complete Example**:
+> External Interface Register:
+> - Third-Party API Service A: HTTPS, OAuth 2.0, encrypted data exchange, certified partner, SLA 99.9%
+> - Logistics API Service: HTTPS, API key authentication, status updates, SLA 99.5%
+> - Cloud Storage Service: HTTPS, IAM role-based authentication, encrypted object storage, server-side encryption AES-256
+> - Notification Service API: HTTPS, API key auth, message delivery, security controls configured
+
+**Why it's Complete**: All external systems listed with protocols, authentication methods, data exchanged, and SLA/security details.
+
+**Partially Complete Example**:
+> External Integrations:
+> - Third-party service provider (transaction processing)
+> - External logistics providers (status tracking)
+> - Notification service (alerts and messages)
+> - Analytics platform (usage metrics)
+> All third-party integrations use secure API connections with authentication.
+
+**Why it's Partial**: Lists all major integrations and mentions "secure connections," but lacks specific protocols, authentication methods, or data exchange details.
+
+**Missing Example**:
+> The system connects to external service providers and third-party platforms for business operations.
+
+**Why it's Missing**: Only generic mention of external connections; no specific systems, interfaces, or protocols documented.
+
+---
+
+### Example: Criterion 9 (Compliance Requirements) - Complete vs Partial vs Missing
+
+**Complete Example**:
+> **Compliance Requirements**:
+> - PCI-DSS 4.0 (Requirement 3: Protect stored cardholder data, Requirement 8: Identify and authenticate access)
+> - GDPR Article 32 (Security of processing)
+> - SOX Section 404 (Internal control assessment)
+>
+> **Control Mapping**:
+> | Requirement | Control | Evidence |
+> |-------------|---------|----------|
+> | PCI-DSS 4.0 Req 3.4 | AES-256 encryption | Encryption audit log 2025-Q4 |
+> | GDPR Art 32 | Data protection controls | GDPR compliance attestation |
+>
+> **Evidence**: Compliance attestation documents, audit reports, control verification
+
+**Why it's Complete**: Standards explicitly cited with specific sections, requirements mapped to controls, evidence provided.
+
+**Partially Complete Example**:
+> **Compliance Requirements**:
+> - System complies with PCI-DSS 4.0 for payment card data protection
+> - GDPR Article 32 security controls implemented
+> - Industry-standard encryption and access controls
+>
+> (No control mapping table, no evidence)
+
+**Why it's Partial**: Specific standards cited (PCI-DSS 4.0, GDPR Article 32) BUT no mapping to controls, no evidence. Represents ~40-50% of expected compliance documentation.
+
+**IMPORTANT**: Specific standard citations (e.g., "PCI-DSS 4.0", "GDPR Article 32") are REQUIRED for Partially Complete. Broad regulatory references alone = Missing.
+
+**Missing Example**:
+> **Compliance**:
+> - E-commerce regulations
+> - Data protection laws
+> - Payment card industry security standards (via payment processor)
+> - Tax regulations
+
+**Why it's Missing**: Only broad regulatory references (e.g., "payment card industry security standards", "data protection laws") without specific standard citations. No PCI-DSS version number, no GDPR article references, no specific regulations named.
+
+---
+
+### Example: Criterion 11 (Known Issues) - Partially Complete
+
+**What you might see in SAR**:
+> **Known Limitations:**
+> - Multi-factor authentication is planned for Q2 2025
+> - Additional audit logging capabilities are being developed
+> - Database encryption at rest is scheduled for implementation
+
+**Why it's Partial**:
+- Acknowledges some gaps (planned improvements)
+- But no **current vulnerabilities** documented (no CVE IDs, no vulnerability scan findings)
+- No **architectural weaknesses** documented (no design limitations, no technical debt)
+- No **known configuration issues** (no deviations from security standards)
+
+**What would make it Missing**:
+> "The system follows security best practices and maintains a strong security posture."
+
+(No acknowledgment of any issues, limitations, or planned improvements)
+
+**What would make it Complete**:
+> **Known Issues Register:**
+> - **CVE-2024-1234** in caching layer v6.x (severity: HIGH, unpatched, remediation: Q1 2025)
+> - **Architectural weakness**: Database lacks row-level encryption (design limitation, mitigation: application-layer encryption)
+> - **Configuration gap**: MFA not implemented for admin accounts (planned, target: Q2 2025)
+> - **Technical debt**: Legacy authentication module needs refactoring (security implications: limited MFA support)
+
+(Documents current vulnerabilities, architectural weaknesses, configuration gaps, and technical debt with severity and remediation plans)
+
+---
+
+### Example: Criterion 12 (Documentation Quality & Completeness) - Complete vs Partial vs Missing
+
+**Complete Example**:
+> **System A Security Architecture Review v3.2**
+>
+> **Table of Contents**:
+> 1. Executive Summary
+> 2. System Overview
+> 3. Architecture & Components
+> 4. Security Controls
+> [... all sections listed]
+>
+> **Version**: 3.2 (2025-12-12)
+> **Change History**:
+> - v3.2 (2025-12-12): Updated security controls section
+> - v3.1 (2025-11-01): Added cloud migration details
+>
+> **Architecture Diagrams**:
+> - System Architecture Diagram (embedded)
+> - Network Topology Diagram (embedded)
+> - Data Flow Diagram (embedded)
+>
+> **References**:
+> - Internal Policy SEC-2024: Security Classification
+> - Vulnerability Scan Report (2025-Q4)
+> - Penetration Test Results (2025-11-15)
+>
+> **Acronyms & Definitions**: [Complete glossary]
+
+**Why it's Complete**: All elements present - TOC, version control with change history, architecture diagrams embedded, references to supporting documentation, terminology defined.
+
+**Partially Complete Example**:
+> **System B Security Architecture Review**
+>
+> **Table of Contents**:
+> 1. Overview
+> 2. Components
+> 3. Security
+> [... sections listed]
+>
+> **Version**: 1.0
+> (No change history - single version only)
+>
+> (No architecture diagrams - text-only document)
+>
+> **Appendices**:
+> - Appendix A: Acronyms
+> - Appendix B: Related Documents
+>
+> **References**: None specified
+
+**Why it's Partial**: Organizational elements present (TOC, version, appendices) BUT missing architecture diagrams, no change history (single version only), no references to supporting documentation. Represents ~40-50% of expected elements for a Security Architecture Review.
+
+**CRITICAL**: Architecture diagrams (System Architecture, Network Topology, Data Flow) are **NON-NEGOTIABLE REQUIREMENTS** for a Security Architecture Review. Their absence alone prevents a "Complete" rating, regardless of how well-structured the rest of the document is.
+
+**Missing Example**:
+> **System C Security Review**
+>
+> (No table of contents)
+> (No version number)
+> (No section headers - unstructured narrative)
+> (No diagrams)
+> (No references or appendices)
+>
+> Unstructured document with security information presented as continuous text without organization, version control, or supporting materials.
+
+**Why it's Missing**: No organizational elements AND no diagrams. Document lacks structure, versioning, and references. Less than 30% of expected documentation quality elements.
+
+---
+
+## NIST 800-30 Risk Assessment Methodology
+
+### Purpose of Risk Assessment
+
+For each criterion (1-12), you will assess the RISK associated with its current completeness level using NIST SP 800-30 methodology.
+
+### **CRITICAL REQUIREMENT: Generate Risk Assessments for ALL 12 Criteria**
+
+**MANDATORY**: You MUST generate exactly **12 risk assessments**, one for each criterion (1-12).
+
+**Important clarification**:
+- **Complete criteria**: Still generate risk assessment documenting LOW residual risk (establishes baseline when documentation IS complete)
+- **Partial criteria**: Document gaps and associated risks
+- **Missing criteria**: Document critical risks from missing documentation
+
+**Why Complete criteria need risk assessments**:
+- Establishes baseline risk when documentation is adequate
+- Shows what "good" looks like (likelihood: LOW, impact: LOW, risk: LOW)
+- Provides comparison point for gap-driven risks
+- Required for complete NIST 800-30 system characterization
+
+**Example - Complete Criterion Risk Assessment (Criterion 12 with all diagrams present)**:
+- **Likelihood**: LOW (3/10) - Well-documented architecture reduces misconfiguration risk
+- **Impact**: LOW (3/10) - Clear diagrams minimize interpretation errors
+- **Risk Level**: LOW - Adequate documentation mitigates documentation-related risks
+- **Threat Scenario**: Even with complete diagrams, minor risks exist (e.g., diagrams becoming outdated, but impact is minimal with version control)
+
+**Verification Before Output**:
+1. Count your risk assessments
+2. Verify you have exactly 12 (one per criterion numbered 1-12)
+3. If you have fewer than 12, identify which criterion is missing and generate its risk assessment
+4. Criterion numbers in risk_assessments array must include ALL of: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+
+### NIST Assessment Scales
+
+#### Likelihood Scale (NIST SP 800-30 Table 3-1)
+
+Likelihood represents the probability that a threat event will occur given the vulnerability (gap) exists.
+
+| Qualitative Level | Quantitative Score | Probability | Description |
+|-------------------|-------------------|-------------|-------------|
+| **Very High** | 9-10 | > 80% | Almost certain to occur; threat exploits gap frequently |
+| **High** | 7-8 | 60-80% | Highly likely to occur; gap commonly targeted |
+| **Moderate** | 5-6 | 40-60% | Somewhat likely to occur; gap occasionally exploited |
+| **Low** | 3-4 | 20-40% | Unlikely to occur; gap rarely targeted |
+| **Very Low** | 1-2 | < 20% | Highly unlikely; gap seldom exploited |
+
+**Factors influencing likelihood**:
+- **Threat capability**: Sophistication required to exploit the gap
+- **Attack surface**: Exposure of the system (public-facing vs internal)
+- **Existing compensating controls**: Other protections that reduce likelihood
+- **Threat intent/motivation**: Value of the target to adversaries
+- **Historical precedent**: How often this type of gap is exploited
+
+#### Impact Scale (NIST SP 800-30 Table 3-2)
+
+Impact represents the magnitude of harm if the threat event occurs.
+
+| Qualitative Level | Quantitative Score | Description | Examples |
+|-------------------|-------------------|-------------|----------|
+| **Very High** | 9-10 | Catastrophic harm; mission failure | Loss of life, major data breach (>100K records), regulatory shutdown, >$10M loss |
+| **High** | 7-8 | Severe harm; major mission degradation | Significant PII breach, major financial loss ($1M-$10M), regulatory fines |
+| **Moderate** | 5-6 | Serious harm; noticeable mission impact | Limited data exposure, moderate financial loss ($100K-$1M), service degradation |
+| **Low** | 3-4 | Limited harm; minor mission impact | Internal data exposure, small financial loss ($10K-$100K), brief disruption |
+| **Very Low** | 1-2 | Negligible harm; no mission impact | Trivial data exposure, minimal financial loss (<$10K), no disruption |
+
+**Impact Domains** (assess each separately):
+1. **Confidentiality**: Loss of data confidentiality, unauthorized disclosure
+2. **Integrity**: Data or system integrity compromise, unauthorized modification
+3. **Availability**: Loss of system or data availability, denial of service
+4. **Privacy**: Personal information exposure, privacy violations (GDPR, CCPA)
+5. **Safety**: Physical harm, health and safety impacts
+
+**Overall Impact Score**: Use the **HIGHEST domain score** as the overall impact (NIST principle: worst-case domain determines impact).
+
+#### Risk Matrix (NIST SP 800-30 Table 3-3)
+
+Combine Likelihood and Impact to determine Risk Level:
+
+| **Likelihood ↓ \\ Impact →** | **Very Low (1-2)** | **Low (3-4)** | **Moderate (5-6)** | **High (7-8)** | **Very High (9-10)** |
+|------------------------------|-------------------|---------------|-------------------|----------------|---------------------|
+| **Very High (9-10)** | Low | Moderate | High | Very High | Very High |
+| **High (7-8)** | Low | Moderate | Moderate | High | Very High |
+| **Moderate (5-6)** | Low | Low | Moderate | Moderate | High |
+| **Low (3-4)** | Very Low | Low | Low | Moderate | Moderate |
+| **Very Low (1-2)** | Very Low | Very Low | Low | Low | Moderate |
+
+**Risk Score Calculation**: For prioritization purposes, calculate risk score as:
+- **Risk Score** = (Likelihood + Impact) / 2
+- Example: Likelihood 8 + Impact 8 = 16 / 2 = 8.0 risk score
+
+### How to Assess Risk for Each Criterion
+
+For each criterion (1-12), follow these steps:
+
+#### Step 1: Identify Threat Scenarios
+
+Ask yourself:
+- What specific threat events does this criterion's completeness level enable or prevent?
+- Who are the threat sources? (External adversary, insider, accidental actor, environmental)
+- What vulnerability does this create (if gap) or mitigate (if complete)?
+- What is the attack path? (How would a threat exploit this gap, or what's prevented if complete?)
+
+**NIST Threat Taxonomy References** (use these categories):
+- **Appendix E - Threat Sources**:
+  - Adversarial: External attackers, insiders, trusted partners, nation-states
+  - Accidental: Human errors, accidents
+  - Structural: System failures, dependencies
+  - Environmental: Natural disasters, infrastructure failures
+
+- **Appendix F - Threat Events**:
+  - Unauthorized access, privilege escalation
+  - Data exfiltration, unauthorized disclosure
+  - Data modification, integrity compromise
+  - Denial of service, system disruption
+  - Malicious code introduction
+
+**Important**: Base scenarios on the SAR content. Do NOT invent exotic or speculative threats. Focus on realistic scenarios relevant to the system's context.
+
+#### Step 2: Determine Likelihood (0-10 scale)
+
+Assess how likely exploitation is given this criterion's completeness:
+
+**Consider**:
+- How exposed is the system? (Public internet, internal network, isolated)
+- How sophisticated does an attacker need to be?
+- Are there compensating controls that reduce likelihood?
+- Is this type of gap commonly exploited? (Historical data, industry trends)
+- How valuable is the target to threat actors?
+
+**Assign**:
+- Qualitative level (Very Low / Low / Moderate / High / Very High)
+- Quantitative score (1-10)
+- Rationale explaining your determination
+
+**Scoring Guidelines**:
+- **High (7-8)**: Public-facing system, no asset inventory for critical assets, high-value target, commonly exploited gap type
+- **Moderate (5-6)**: Internal system with some exposure, partial documentation, requires skilled attacker
+- **Low (3-4)**: Well-controlled environment despite doc gap, requires sophisticated attacker, low-value target
+- **Very Low (1-2)**: Complete documentation, compensating controls in place, minimal residual risk
+
+#### Step 3: Determine Impact (0-10 scale)
+
+Assess the consequences if the threat event occurs:
+
+**Consider each domain**:
+- **Confidentiality**: What sensitive data could be exposed? (User PII, sensitive transaction data, IP, credentials)
+- **Integrity**: What data/systems could be modified? (Financial records, configurations, audit logs)
+- **Availability**: What services could be disrupted? (Mission-critical vs non-critical)
+- **Privacy**: What privacy violations could occur? (GDPR, CCPA, other regulations)
+- **Safety**: Could physical harm occur? (Usually Very Low for IT systems)
+
+**Assess financial impact** (calibration check):
+- Very High: >$10M (breach costs + fines + reputation)
+- High: $1M-$10M
+- Moderate: $100K-$1M
+- Low: $10K-$100K
+
+**Assign**:
+- Impact score for each domain (Confidentiality, Integrity, Availability, Privacy, Safety)
+- Overall impact = HIGHEST domain score
+- Qualitative level (Very Low / Low / Moderate / High / Very High)
+- Quantitative score (1-10)
+- Rationale explaining your determination
+
+#### Step 4: Calculate Risk Level
+
+Apply the NIST Risk Matrix:
+
+1. Look up the intersection of Likelihood and Impact in Table 3-3
+2. Assign the resulting risk level (Very Low / Low / Moderate / High / Very High)
+3. Calculate risk score: (Likelihood + Impact) / 2
+4. Document the matrix result reference
+
+### Risk Assessment Calibration Examples
+
+To ensure consistent risk assessment, here are complete examples for the three Missing criteria:
+
+#### Criterion 4: Asset Identification - Risk Assessment Example
+
+**Completeness Status**: Missing (from earlier evaluation)
+**Why Missing**: No formal asset register, no classification, no ownership assigned
+
+**NIST 800-30 Risk Assessment**:
+
+**Threat Scenarios**:
+
+1. **External Reconnaissance → Undocumented System Compromise**
+   - **Threat Source**: External adversary (malicious hacker, organized cybercrime group)
+   - **Threat Event**: Unauthorized access to sensitive data (NIST Appendix F.2)
+   - **Vulnerability**: Without an asset inventory, security teams cannot apply consistent controls to all assets. Undocumented systems may lack patching, monitoring, and access controls.
+   - **Attack Path**:
+     1. Attacker performs network reconnaissance (port scanning, service enumeration)
+     2. Identifies undocumented data store running outdated relational database version
+     3. Exploits known CVE in unpatched database
+     4. Exfiltrates user PII and financial credentials
+
+2. **Insider Threat → Unmonitored System Abuse**
+   - **Threat Source**: Insider - malicious employee with privileged access (NIST Appendix E.2.2)
+   - **Threat Event**: Data exfiltration or integrity compromise (NIST Appendix F.3)
+   - **Vulnerability**: Untracked assets not monitored by security tools (SIEM, DLP, endpoint protection)
+   - **Attack Path**:
+     1. Malicious insider identifies unmonitored object storage not in asset register
+     2. Accesses bucket using legitimate credentials
+     3. Exfiltrates user data or alters financial records
+     4. Actions not logged or alerted due to lack of monitoring coverage
+
+**Likelihood Assessment**: **HIGH (8/10)**
+- **Rationale**: Without an asset inventory, security teams cannot ensure all systems are patched, monitored, and secured. Historical data shows that 70% of breaches involve initially undocumented assets (Verizon DBIR). For a business platform handling sensitive transaction data, attackers actively scan for vulnerable, untracked systems. High probability of targeting given the value of user and sensitive transaction data.
+- **Qualitative**: High
+- **Quantitative**: 8
+
+**Impact Assessment**: **HIGH (8/10)**
+- **Rationale**: Loss of user PII (names, addresses, emails, phone numbers) constitutes a GDPR Article 33 breach notification event. Financial credentials exposure violates PCI-DSS requirements, resulting in fines ($5K-$500K per incident), forensic investigation costs, potential loss of transaction processing privileges, and mandatory user notification. Estimated total impact: $500K-$2M (breach response costs) + regulatory fines + reputational damage leading to user churn.
+- **Impact Domains**:
+  - **Confidentiality**: **HIGH (8)** - User PII, financial credentials, credentials exposed
+  - **Integrity**: **MODERATE (5)** - Potential alteration of financial records, order data
+  - **Availability**: **LOW (3)** - Asset loss unlikely to cause sustained service downtime
+  - **Privacy**: **HIGH (8)** - GDPR compliance failure, user trust loss, regulatory penalties
+  - **Safety**: **VERY LOW (1)** - No physical harm expected from IT system compromise
+- **Overall Impact**: **HIGH (8/10)** - Using highest domain score (Confidentiality, Privacy both 8)
+- **Qualitative**: High
+- **Quantitative**: 8
+
+**Risk Level**: **VERY HIGH**
+- **Matrix Result**: Likelihood HIGH (8) × Impact HIGH (8) = **VERY HIGH** (per NIST Table 3-3)
+- **Risk Score**: (8 + 8) / 2 = **8.0** (for prioritization)
+- **Qualitative**: Very High
+
+---
+
+#### Criterion 5: Information Sensitivity and Classification - Risk Assessment Example
+
+**Completeness Status**: Missing (from earlier evaluation)
+**Why Missing**: No formal classification schema, only generic mentions of "sensitive data" without classification levels
+
+**NIST 800-30 Risk Assessment**:
+
+**Threat Scenarios**:
+
+1. **Data Mishandling → Regulatory Breach**
+   - **Threat Source**: Accidental - human error (NIST Appendix E.3)
+   - **Threat Event**: Unauthorized disclosure of sensitive information (NIST Appendix F.4)
+   - **Vulnerability**: Without formal data classification, employees and system administrators don't know which data requires special handling (encryption, access restrictions, retention limits)
+   - **Attack Path**:
+     1. Developer copies production database to staging environment for testing
+     2. Without classification labels, developer doesn't realize staging environment lacks encryption
+     3. Staging environment is less restrictive, more people have access
+     4. User PII and sensitive transaction data now exposed to unauthorized personnel
+     5. Potential external breach from less-secured staging environment
+
+2. **Overexposure → Excessive Access**
+   - **Threat Source**: Structural - inadequate access controls (NIST Appendix E.4)
+   - **Threat Event**: Privilege escalation, unauthorized access (NIST Appendix F.2)
+   - **Vulnerability**: Without classification, all data treated equally → overly permissive access controls. No clear boundaries on who can access what.
+   - **Attack Path**:
+     1. Without classification, system applies same access controls to all data
+     2. Support staff have access to user sensitive transaction data (should be restricted)
+     3. Attacker compromises support staff account
+     4. Gains access to financial credentials that should have been restricted to transaction processing systems only
+
+**Likelihood Assessment**: **HIGH (8/10)**
+- **Rationale**: Without classification labels, employees lack guidance on data handling. Mishandling is common in environments without classification policies - studies show 60% of data breaches involve internal mishandling or accidental exposure. For a business platform, employees routinely work with user and sensitive transaction data, creating frequent opportunities for mishandling.
+- **Qualitative**: High
+- **Quantitative**: 8
+
+**Impact Assessment**: **HIGH (8/10)**
+- **Rationale**: Mishandling of financial credentials violates PCI-DSS, resulting in fines, forensic audits, and potential loss of transaction processing. GDPR violations for user PII result in fines up to €20M or 4% of global revenue (whichever is higher). Estimated impact: $1M-$3M (PCI-DSS fines + GDPR fines + breach notification costs + user notification + reputation damage).
+- **Impact Domains**:
+  - **Confidentiality**: **HIGH (8)** - PII and sensitive transaction data disclosure
+  - **Integrity**: **MODERATE (4)** - Accidental modification less likely than disclosure
+  - **Availability**: **LOW (2)** - Mishandling unlikely to cause outages
+  - **Privacy**: **VERY HIGH (9)** - Direct GDPR violation, user trust breach
+  - **Safety**: **VERY LOW (1)** - No physical harm expected
+- **Overall Impact**: **VERY HIGH (9/10)** - Using highest domain score (Privacy: 9)
+- **Qualitative**: Very High
+- **Quantitative**: 9
+
+**Risk Level**: **VERY HIGH**
+- **Matrix Result**: Likelihood HIGH (8) × Impact VERY HIGH (9) = **VERY HIGH** (per NIST Table 3-3)
+- **Risk Score**: (8 + 9) / 2 = **8.5** (for prioritization)
+- **Qualitative**: Very High
+
+---
+
+#### Criterion 9: Security and Compliance Requirements - Risk Assessment Example
+
+**Completeness Status**: Missing (from earlier evaluation)
+**Why Missing**: No specific standards or regulations named, no mapping to controls
+
+**NIST 800-30 Risk Assessment**:
+
+**Threat Scenarios**:
+
+1. **Audit Finding → Regulatory Action**
+   - **Threat Source**: External - regulatory agency (NIST Appendix E.1)
+   - **Threat Event**: Compliance violation, regulatory enforcement
+   - **Vulnerability**: Without documented compliance requirements, controls are not mapped to regulations. During audit, organization cannot demonstrate compliance, leading to findings and enforcement actions.
+   - **Attack Path**:
+     1. PCI-DSS audit reveals no documented mapping of PCI requirements to controls
+     2. Auditor finds controls inadequate or missing for required PCI-DSS sections
+     3. Organization fails PCI-DSS assessment
+     4. Financial transaction brands impose fines, monthly penalties, potential loss of transaction processing
+     5. Business impact: cannot accept credit cards until compliance demonstrated
+
+2. **Control Gap → Security Incident + Non-Compliance**
+   - **Threat Source**: External adversary (NIST Appendix E.2.1)
+   - **Threat Event**: Exploit vulnerability due to missing control (NIST Appendix F.2)
+   - **Vulnerability**: Without compliance mapping, required controls (e.g., PCI-DSS encryption, GDPR data protection) may not be implemented
+   - **Attack Path**:
+     1. PCI-DSS requires encryption of cardholder data at rest
+     2. Without compliance mapping, organization doesn't know this is required
+     3. Financial transaction data stored unencrypted in database
+     4. Attacker breaches database, exfiltrates plaintext financial credentials
+     5. Double penalty: security breach + PCI-DSS non-compliance violation
+
+**Likelihood Assessment**: **HIGH (7/10)**
+- **Rationale**: Business platforms handling sensitive transaction data are subject to regular PCI-DSS audits (annually or quarterly). Without documented compliance mapping, audit failures are highly likely. Additionally, GDPR applies to EU user data, and lack of documented compliance increases likelihood of violations. Regulatory enforcement actions are common in financial services sector.
+- **Qualitative**: High
+- **Quantitative**: 7
+
+**Impact Assessment**: **HIGH (8/10)**
+- **Rationale**: PCI-DSS non-compliance results in fines ($5K-$100K per month until compliant), forensic investigation costs, potential termination of transaction processing (business-ending for financial services). GDPR violations result in fines up to €20M or 4% of global revenue. Compliance failures also trigger mandatory breach notifications, credit monitoring for users, and severe reputational damage. Estimated impact: $2M-$5M (fines + remediation + business disruption).
+- **Impact Domains**:
+  - **Confidentiality**: **MODERATE (6)** - Compliance gaps may lead to data exposure
+  - **Integrity**: **LOW (3)** - Less directly affected by compliance failures
+  - **Availability**: **HIGH (7)** - Loss of transaction processing = business disruption
+  - **Privacy**: **HIGH (8)** - GDPR non-compliance, privacy violations
+  - **Safety**: **VERY LOW (1)** - No physical harm expected
+- **Overall Impact**: **HIGH (8/10)** - Using highest domain score (Privacy: 8)
+- **Qualitative**: High
+- **Quantitative**: 8
+
+**Risk Level**: **VERY HIGH**
+- **Matrix Result**: Likelihood HIGH (7) × Impact HIGH (8) = **VERY HIGH** (per NIST Table 3-3)
+- **Risk Score**: (7 + 8) / 2 = **7.5** (for prioritization)
+- **Qualitative**: Very High
+
+---
+
+## Evaluation Criteria
+
+### 1. System Scope and Boundaries
+**What the SAR should document:**
+- Clear definition of what is included in the system (in-scope components)
+- Clear definition of what is excluded (out-of-scope components)
+- Justification for scope decisions
+- Identification of system boundaries within the organizational context
+- Definition of the system's operational environment
+
+**What counts as Complete**:
+- ✅ In-scope AND out-of-scope lists present
+- ✅ **Justification/rationale for each scope decision** (why included/excluded)
+- ✅ System boundaries identified (network boundaries, organizational boundaries)
+- ✅ Operational environment described (cloud region, on-premise links, network zones)
+
+**What counts as Partial**:
+- ⚠️ In-scope/out-of-scope lists present BUT no justification for why decisions were made
+- ⚠️ Boundaries described but scope decisions not explained
+- ⚠️ Operational environment mentioned but not detailed
+
+**What counts as Missing**:
+- ❌ Only vague scope description, no formal in-scope/out-of-scope lists
+- ❌ No explanation of system boundaries
+- ❌ Generic statements like "the system includes all components necessary for operation"
+
+**Questions to answer:**
+- Is the system clearly delineated from other systems?
+- Are interconnected systems and dependencies identified?
+- Is the rationale for scope decisions explained?
+
+### 2. System Components and Architecture
+**What the SAR should document:**
+- Complete inventory of hardware components (servers, workstations, network devices, storage)
+- Complete inventory of software components (applications, operating systems, middleware, databases)
+- System architecture diagrams showing component relationships
+- Network topology and connectivity
+- Data storage locations and mechanisms
+- Processing workflows and procedures
+- Personnel and roles involved in system operations
+
+**Questions to answer:**
+- Can you clearly identify every major component?
+- Are all interconnections between components documented?
+- Are architecture diagrams present and accurate?
+- Is the technology stack fully described?
+
+### 3. Data Flows and Information Movement
+**What the SAR should document:**
+- How data enters the system (sources and input mechanisms)
+- How data moves between system components
+- How data is processed and transformed
+- How data leaves the system (outputs and destinations)
+- Data retention and storage methods
+- Backup and recovery mechanisms
+
+**Questions to answer:**
+- Can you trace data from input to output?
+- Are all data transformations documented?
+- Are external data exchanges clearly mapped?
+- Is the flow of sensitive data identified?
+
+### 4. Asset Identification and Classification
+**What the SAR should document:**
+- Inventory of all system assets (hardware, software, data, documentation)
+- Classification of assets by type and function
+- Identification of critical or mission-essential assets
+- Asset dependencies and relationships
+- Asset ownership and responsibility assignments
+
+**What counts as documentation**:
+- ✅ Formal asset register or inventory table with asset details
+- ✅ Assets classified by type, criticality, or business function
+- ✅ Asset ownership or responsibility explicitly assigned
+- ✅ Asset dependencies documented (e.g., "Database depends on storage layer")
+- ❌ Component list only (e.g., "database, storage, caching layer") without register
+- ❌ Technology stack listing without classification or ownership
+- ❌ Architecture diagram alone without formal asset inventory
+
+**Questions to answer:**
+- Are all valuable assets inventoried?
+- Is it clear which assets are most critical?
+- Are asset interdependencies understood?
+
+### 5. Information Sensitivity and Classification
+**What the SAR should document:**
+- Categories of information processed by the system (e.g., financial, health, proprietary, personal)
+- Classification levels assigned to different information types (e.g., confidential, internal, public)
+- Regulatory or compliance requirements applicable to the information
+- Information lifecycle (collection, use, retention, disposal)
+- Data ownership and stewardship
+
+**What counts as documentation**:
+- ✅ Formal classification schema (e.g., "Public/Internal/Confidential/Restricted")
+- ✅ Each data type explicitly assigned a classification level
+- ✅ References to organizational classification policy
+- ❌ General mentions of "sensitive data" or "credentials" without classification
+- ❌ Implicit sensitivity (e.g., "we protect passwords") without formal levels
+- ❌ **Listing data types (e.g., "user data, financial records, content") without assigning classification levels to each**
+
+**Questions to answer:**
+- Is the sensitivity of all information types understood?
+- Are compliance requirements documented?
+- Is classification consistent with organizational policy?
+- Are handling requirements clear?
+
+### 6. System Purpose, Business Context, and Mission Criticality
+**What the SAR should document:**
+- The business purpose and objectives the system serves
+- Key business processes supported by the system
+- Organizational dependencies on the system
+- System criticality to operations (mission-essential designation)
+- Recovery time objectives (RTO) and recovery point objectives (RPO)
+- Business continuity and availability requirements
+
+**What counts as Partially Complete**:
+- ✅ Purpose statement + system scale (e.g., transaction volume, user count) + **at least ONE** of: RTO/RPO, mission criticality designation, business continuity plan
+- ❌ Purpose statement alone is too minimal = Missing (< 30% of expected)
+
+**What counts as Missing**:
+- ❌ Only purpose statement (e.g., "E-commerce platform") without additional business context
+- ❌ No RTO/RPO, no mission criticality, no business continuity information
+
+**Questions to answer:**
+- Is the system's role in the organization clear?
+- Are the consequences of system unavailability understood?
+- Are availability and recovery requirements defined?
+- Is the system's importance to business operations documented?
+
+### 7. System Interfaces and External Connections
+**What the SAR should document:**
+- All external system interfaces and connections
+- Third-party systems or services the system depends on
+- Integration points with other organizational systems
+- External data providers or consumers
+- Cloud services or hosted components (if applicable)
+- API or data exchange mechanisms with external entities
+
+**Questions to answer:**
+- Are all external connections identified?
+- Are dependencies on external services clear?
+- Are integration points and protocols documented?
+- Is the scope of third-party access defined?
+
+### 8. Security Controls and Protections
+**What the SAR should document:**
+- Current security controls and safeguards in place (technical, operational, and managerial)
+- Planned or proposed security controls not yet implemented
+- Control implementation status (fully implemented, partially implemented, planned)
+- How controls address security requirements
+- Access control mechanisms (authentication, authorization)
+- Encryption methods and key management
+- Monitoring and logging capabilities
+- Incident response mechanisms
+
+**What counts as Complete**:
+- ✅ All control categories documented (access, network, application, data, monitoring, vulnerability, incident)
+- ✅ **Implementation status** for each (Fully implemented, Partially implemented, Planned)
+- ✅ **Mapping to frameworks** (e.g., "Access control meets NIST CSF PR.AC-1" or "Encryption per PCI-DSS Requirement 3")
+- ✅ Evidence or references provided (e.g., "SIEM operational since 2024-Q1")
+
+**What counts as Partial**:
+- ⚠️ Control categories documented with descriptions BUT no implementation status or mapping (~50-70% of expected)
+- ⚠️ No mapping to requirements (e.g., no link to PCI-DSS control 8.2.1)
+- ⚠️ Generic descriptions without evidence of operation
+
+**What counts as Missing**:
+- ❌ Only high-level security categories listed (e.g., "We have access control")
+- ❌ No specific controls documented
+- ❌ Principles mentioned but not controls (e.g., "We follow defense-in-depth")
+
+**Questions to answer:**
+- Are existing protections documented?
+- Is control implementation status clear?
+- Are gaps in controls identified?
+- Are planned improvements documented?
+
+### 9. Security and Compliance Requirements
+**What the SAR should document:**
+- Applicable security standards and frameworks (NIST CSF, ISO 27001, industry-specific standards)
+- Regulatory compliance requirements (HIPAA, PCI-DSS, SOX, GDPR, etc.)
+- Organizational security policies and standards
+- System-specific security requirements
+- How requirements map to system components and controls
+
+**What counts as documentation**:
+- ✅ Explicit citation of standards (e.g., "NIST CSF", "ISO 27001", "PCI-DSS 4.0")
+- ✅ Regulatory requirements identified (e.g., "GDPR Article 32", "HIPAA § 164.312")
+- ✅ Mapping of requirements to system components or controls
+- ❌ General statement of "following security best practices"
+- ❌ Adherence to design principles without citing formal standards
+
+**Questions to answer:**
+- Are all applicable standards identified?
+- Are compliance obligations clear?
+- Is there documented evidence of requirement mapping?
+- Are requirement conflicts or gaps noted?
+
+### 10. System Environment and Operational Context
+**What the SAR should document:**
+- Physical locations where system components are deployed (on-premises, cloud, hybrid)
+- Environmental considerations (data center security, climate control, physical access controls)
+- Operational hours and maintenance windows
+- System administrators and operational staff
+- Change management procedures
+- System performance baselines and metrics
+
+**What counts as Complete**:
+- ✅ Cloud environment with specific regions (e.g., "AWS us-east-1, us-west-2") OR physical data center locations
+- ✅ Environmental controls documented (power, cooling, physical access)
+- ✅ Change management procedures documented
+- ✅ Operational hours, maintenance windows, performance baselines
+
+**What counts as Partial**:
+- ⚠️ Operational overview (cloud, uptime, scaling, maintenance) BUT no physical locations or environmental controls (~60% of expected)
+- ⚠️ Generic cloud reference (e.g., "AWS") without specific regions
+
+**Questions to answer:**
+- Is the physical and operational context clear?
+- Are environmental constraints documented?
+- Is the operational team and their responsibilities defined?
+- Are operational procedures and schedules documented?
+
+### 11. Known Issues, Vulnerabilities, and Weaknesses
+**What the SAR should document:**
+- Known technical vulnerabilities or deficiencies
+- Architectural weaknesses or design limitations
+- Known configuration issues or misalignments with best practices
+- Deviations from security standards or requirements
+- Technical debt or legacy system concerns
+- Performance or reliability limitations
+
+**What counts as Complete**:
+- ✅ Current vulnerabilities documented (e.g., CVE IDs, vulnerability scan findings)
+- ✅ Architectural weaknesses identified (e.g., "lack of row-level encryption")
+- ✅ Risk rating for each issue (severity: HIGH/MODERATE/LOW, remediation timeline)
+- ✅ Known configuration issues documented (e.g., "MFA not enabled")
+
+**What counts as Partial**:
+- ⚠️ Known limitations or planned improvements listed (acknowledges some gaps)
+- ⚠️ BUT no current vulnerabilities documented (no CVE tracking, no scan results)
+- ⚠️ No architectural weaknesses identified
+- ⚠️ No risk severity assigned to issues
+
+**What counts as Missing**:
+- ❌ Only generic statements like "we follow best practices"
+- ❌ No acknowledgment of any issues, limitations, or weaknesses
+- ❌ Confuses "risk categories" (e.g., "data breach risk") with "known vulnerabilities" (e.g., "CVE-2024-1234")
+
+**Questions to answer:**
+- Are known issues acknowledged?
+- Is there transparency about weaknesses?
+- Are gaps from security requirements documented?
+- Are limitations understood and accepted?
+
+### 12. Documentation Quality and Completeness
+**What the SAR should provide:**
+- Clear and readable format (organized sections, logical flow)
+- Diagrams and visual representations where appropriate
+- Accurate and up-to-date information
+- Version control and change history
+- References to supporting documentation
+- Defined terminology and acronyms
+- Clear ownership and approval signatures
+
+**What counts as Complete**:
+- ✅ All structural elements present (version control, ToC, terminology, sections, approval signatures)
+- ✅ **Architecture diagrams present (System Architecture, Network Topology, Data Flow)**
+  - **CRITICAL**: For Security Architecture Reviews, diagrams are **NON-NEGOTIABLE REQUIREMENTS**, not optional enhancements
+  - **Without diagrams**: Cannot be rated Complete, REGARDLESS of how well-structured the rest of the document is
+- ✅ References to supporting documentation (policies, test reports, compliance attestations)
+- ✅ Change history documented (for versioned documents)
+
+**What counts as Partial**:
+- ⚠️ Structural elements present (ToC, version control, terminology, approvals) BUT **missing architecture diagrams**
+- ⚠️ Missing supporting documentation references
+- ⚠️ Missing change history (only current version shown)
+- ⚠️ Poor organization or readability issues despite having some structure
+
+**What counts as Missing**:
+- ❌ No version control
+- ❌ No organization/sections
+- ❌ No terminology definitions
+- ❌ Document is unreadable or poorly structured
+
+**CRITICAL REQUIREMENT**: Architecture diagrams (System Architecture, Network Topology, Data Flow) are **mandatory** for Security **Architecture** Reviews. A well-structured text-only SAR, even with perfect version control and terminology, **CANNOT be rated Complete** without visual architecture representations. This is non-negotiable.
+
+**Questions to answer:**
+- Is the SAR well-organized and easy to navigate?
+- **Are visual aids (architecture diagrams) provided? ← MANDATORY for Complete rating**
+- Is the information current?
+- Is supporting documentation referenced?
+
+---
+
+## CRITICAL INSTRUCTION
+
+**IMPORTANT - Evaluate Completeness FIRST, Risk Assessment SECOND**
+
+You must follow this two-step process strictly:
+
+### **Step 1: Evaluate Completeness (ignore risk assessment)**
+
+Evaluate the **completeness of the SAR document** based ONLY on what information is **documented in the SAR**.
+
+**Do NOT:**
+- ❌ Change completeness ratings based on risk assessment insights
+- ❌ Rate a criterion "Complete" because you've identified detailed threats
+- ❌ Rate a criterion "Complete" because you can imagine what's implemented
+- ❌ Let the severity of a gap influence whether it's rated Missing vs Partial
+- ❌ Upgrade a rating from Partial to Complete after performing risk analysis
+
+**DO:**
+- ✅ Rate based ONLY on what's explicitly documented in the SAR
+- ✅ Use the "What counts as documentation" sections as your guide
+- ✅ Follow calibration examples exactly
+- ✅ Apply the scoring rubric (Complete/Partial/Missing) objectively
+- ✅ Complete the entire Section-by-Section Assessment before proceeding to Step 2
+
+### **Step 2: Assess Risk for ALL 12 Criteria (AFTER completeness evaluation)**
+
+Only after completing the Section-by-Section Assessment (all 12 criteria rated) should you proceed to risk assessment.
+
+**CRITICAL**: Generate risk assessments for **ALL 12 criteria**, including those rated "Complete".
+- For Complete criteria: Document LOW residual risk (establishes baseline)
+- For Partial/Missing criteria: Document gaps and associated risks
+
+Risk assessment does NOT change completeness ratings. A criterion with VERY HIGH risk is still rated Missing if it has <30% of expected elements documented.
+
+---
+
+## Pre-Output Verification Checklist
+
+**MANDATORY**: Before finalizing your JSON output, verify ALL of the following:
+
+### Structural Completeness Checks
+
+- [ ] **Exactly 12 entries** in `criteria_assessments` array
+- [ ] **Exactly 12 entries** in `risk_assessments` array
+- [ ] Criterion numbers 1-12 present in `criteria_assessments` (no duplicates, no gaps)
+- [ ] Criterion numbers 1-12 present in `risk_assessments` (no duplicates, no gaps)
+
+### Risk Assessment Verification
+
+- [ ] All 12 criteria have risk assessments (including Complete criteria)
+- [ ] All risk assessments have: criterion_number, criterion_name, completeness_rating, threat_scenarios, likelihood, impact, risk_level
+- [ ] Critical criteria (4, 5, 9) appear in `risk_prioritization.critical_gaps` if rated Partial or Missing
+- [ ] Risk prioritization summary counts match your risk level assignments
+
+**If ANY check fails, FIX IT before outputting the JSON.**
+
+**Common failures to watch for**:
+- ❌ Only 11 risk assessments (missing one criterion)
+- ❌ Criterion numbers have duplicates or gaps (not exactly 1-12)
+
+---
+
+## Evaluation Output Format
+
+**CRITICAL**: Output your evaluation as **JSON** matching the schema provided via the API's `response_format` parameter.
+
+**IMPORTANT**: The evaluation methodology is IDENTICAL to v1.6-stable. Only the output format changes from markdown to JSON. You MUST:
+- Use the SAME calibration examples to determine Complete/Partial/Missing thresholds
+- Apply the SAME scoring rubric (80-100% = Complete, 30-79% = Partial, <30% = Missing)
+- Follow the SAME two-step process (Completeness FIRST, Risk Assessment SECOND)
+- Use the SAME NIST 800-30 risk assessment methodology
+- Generate risk assessments for ALL 12 criteria (not just Partial/Missing)
+
+### JSON Structure Overview
+
+Your JSON output will include these top-level sections:
+
+**1. criteria_assessments** (array of 12 criteria)
+- For EACH criterion (1-12):
+  - Criterion number and name
+  - Rating (complete/partial/missing) ← Use ONLY these three values
+  - What's documented (list of strings)
+  - Gaps identified (list of strings)
+  - Impact on NIST 800-30 assessment (string)
+  - Recommendations (array of {action, priority})
+
+**2. risk_assessments** (array of 12 risk assessments, one per criterion)
+- For EACH criterion (1-12):
+  - Criterion number, name, completeness rating
+  - Threat scenarios (name, threat source, threat event, vulnerability, attack path)
+  - Likelihood assessment (score 1-10, level, rationale)
+  - Impact assessment (score 1-10, level, rationale, domains breakdown)
+  - Risk level (score, level, NIST matrix reference)
+
+**3. risk_prioritization**
+- Summary counts by risk level (very_high_count, high_count, etc.)
+- Critical gaps (list of criterion numbers for criteria 4, 5, 9 if rated partial/missing)
+- Top risks sorted by risk score (rank, criterion, gap summary, priority action)
+
+---
+
+## Scoring Rubric
+
+For each criterion, use these definitions:
+
+### Complete (80-100% of expected elements present)
+- All major "What the SAR should document" bullet points are addressed
+- Information is specific, detailed, and verifiable
+- No significant gaps that would impair risk assessment
+
+### Partially Complete (30-79% of expected elements present)
+- Some "What the SAR should document" bullet points are addressed
+- Information exists but lacks detail, specificity, or completeness
+- Gaps exist but some risk assessment work could proceed with caveats
+
+### Missing (<30% of expected elements present)
+- Few or none of the "What the SAR should document" bullet points are addressed
+- Only indirect references or mentions, no substantive documentation
+- Gaps prevent meaningful risk assessment for this criterion
+
+**Important distinctions**:
+- **Informal mentions ≠ Formal documentation**:
+  - ❌ "credentials are sensitive" ≠ information classification (Criterion 5)
+  - ✅ "User credentials classified as 'Confidential' per Policy X" = documentation
+
+- **Following principles ≠ Compliance documentation**:
+  - ❌ "We follow secure design principles" ≠ compliance requirements (Criterion 9)
+  - ✅ "System must comply with PCI-DSS 3.2.1, requirements mapped in Table X" = documentation
+
+- **External references ≠ Embedded content**:
+  - ❌ "See diagram at https://..." ≠ architecture documentation (Criterion 2)
+  - ✅ Diagram embedded or attached with caption = documentation
+
+---
+
+## Important Notes
+
+- **Completeness Evaluation First**: Evaluate completeness for all 12 criteria using the existing methodology. Do not let risk assessment influence completeness ratings.
+- **Risk Assessment Second**: For ALL 12 criteria, apply NIST 800-30 risk assessment methodology (including Complete criteria).
+- **Generate Exactly 12 Risk Assessments**: You MUST produce 12 risk assessments, one per criterion. Verify this before output.
+- **No Risk Calculations During Completeness**: Focus the completeness evaluation exclusively on system definition completeness. Do not conduct threat analysis, vulnerability assessment, or risk calculations during the completeness phase.
+- **Foundational Step**: Assume this is the foundational step—all downstream NIST 800-30 activities depend on having complete and accurate system characterization.
+- **Objective Gap Identification**: Identify gaps objectively without judgment; the goal is to ensure the SAR provides sufficient foundation for risk assessment work.
+- **Supplementary Documents**: Consider that some information might exist in supplementary documents rather than the SAR itself; note these situations clearly.
+- **Realistic Threat Scenarios**: Base threat scenarios on the SAR content and realistic threat landscape. Do NOT invent exotic or speculative threats.
+
+---
