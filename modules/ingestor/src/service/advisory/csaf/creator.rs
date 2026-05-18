@@ -19,7 +19,6 @@ use crate::{
 use csaf::{Csaf, definitions::ProductIdT, vulnerability::Remediation};
 use sea_orm::{ActiveValue::Set, ConnectionTrait, EntityTrait};
 use std::collections::{HashMap, HashSet};
-use std::str::FromStr;
 use tracing::instrument;
 use trustify_common::{db::chunk::EntityChunkedIter, purl::Purl};
 use trustify_entity::{
@@ -158,12 +157,7 @@ impl<'a> StatusCreator<'a> {
         }
 
         for product in product_statuses {
-            let status_id = graph
-                .db_context
-                .lock()
-                .await
-                .get_status_id(product.status, connection)
-                .await?;
+            let status = crate::graph::db_context::parse_status(product.status)?;
 
             // Organizations have been pre-ingested, just look up from cache
             let org_id = product
@@ -219,7 +213,7 @@ impl<'a> StatusCreator<'a> {
                     let product_status = crate::graph::advisory::product_status::ProductStatus {
                         cpe: product.cpe.clone(),
                         package,
-                        status: status_id,
+                        status,
                         product_version_range_id: range.uuid(),
                         csaf_product_ids: csaf_product_ids.clone(),
                     };
@@ -253,13 +247,13 @@ impl<'a> StatusCreator<'a> {
                     Some(version) => VersionSpec::Exact(version.clone()),
                     None => VersionSpec::Range(Version::Unbounded, Version::Unbounded),
                 };
-                self.create_purl_status(&product, purl, scheme, spec, status_id);
+                self.create_purl_status(&product, purl, scheme, spec, status);
 
                 // For "fixed" status and Red Hat CSAF advisories,
                 // insert "affected" status up until this version.
                 // Let's keep this here for now as a special case. If more exceptions arise,
                 // we can refactor and provide support for vendor-specific parsing.
-                if let Ok(Status::Fixed) = Status::from_str(product.status)
+                if status == Status::Fixed
                     && let Some(cpe_vendor) = product
                         .cpe
                         .as_ref()
@@ -274,12 +268,7 @@ impl<'a> StatusCreator<'a> {
                         purl,
                         scheme,
                         spec,
-                        graph
-                            .db_context
-                            .lock()
-                            .await
-                            .get_status_id(&Status::Affected.to_string(), connection)
-                            .await?,
+                        Status::Affected,
                     );
                 }
             }
@@ -378,7 +367,7 @@ impl<'a> StatusCreator<'a> {
         purl: &Purl,
         scheme: VersionScheme,
         spec: VersionSpec,
-        status: Uuid,
+        status: Status,
     ) {
         let purl_status = PurlStatus {
             cpe: product.cpe.clone(),
