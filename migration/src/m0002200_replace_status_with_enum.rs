@@ -140,9 +140,78 @@ impl MigrationTrait for Migration {
         Ok(())
     }
 
-    async fn down(&self, _manager: &SchemaManager) -> Result<(), DbErr> {
-        Err(DbErr::Migration(
-            "Cannot reverse status table to enum migration".to_string(),
-        ))
+    async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        // 1. Recreate the status table and seed data
+        manager
+            .get_connection()
+            .execute_unprepared(
+                r#"
+                CREATE TABLE IF NOT EXISTS status (
+                    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+                    slug character varying NOT NULL,
+                    name character varying NOT NULL,
+                    description character varying
+                );
+
+                INSERT INTO status (id, slug, name, description) VALUES
+                    ('85b912db-fc1b-4e75-8b27-68b68c0ed828', 'affected', 'Affected', 'Vulnerabililty affects'),
+                    ('619aba21-abba-4220-9e3e-110cf87e5393', 'not_affected', 'Not Affected', 'Vulnerabililty does not affect'),
+                    ('c0273e43-2b0c-4dae-a3b3-c4f9733fbfa7', 'fixed', 'Fixed', 'Vulnerabililty is fixed'),
+                    ('23613500-86a4-4cdb-bc92-8c74e18764da', 'under_investigation', 'Under Investigation', 'Vulnerabililty is under investigation'),
+                    ('2bb0325b-0948-44ea-bab7-46af9fc834eb', 'fixed', 'Fixed', 'Vulnerabililty is fixed'),
+                    ('858a3f17-d864-4be8-932e-4a634de47b8b', 'recommended', 'Recommended', 'Vulnerabililty is fixed & recommended')
+                ON CONFLICT DO NOTHING;
+                "#,
+            )
+            .await?;
+
+        // 2. Add status_id columns and populate from the enum via slug lookup
+        manager
+            .get_connection()
+            .execute_unprepared(
+                r#"
+                ALTER TABLE purl_status
+                    ADD COLUMN IF NOT EXISTS status_id uuid;
+                ALTER TABLE product_status
+                    ADD COLUMN IF NOT EXISTS status_id uuid;
+
+                UPDATE purl_status
+                SET status_id = s.id
+                FROM status s
+                WHERE s.slug = purl_status.status::text;
+
+                UPDATE product_status
+                SET status_id = s.id
+                FROM status s
+                WHERE s.slug = product_status.status::text;
+
+                ALTER TABLE purl_status
+                    ALTER COLUMN status_id SET NOT NULL;
+                ALTER TABLE product_status
+                    ALTER COLUMN status_id SET NOT NULL;
+
+                ALTER TABLE purl_status
+                    ADD CONSTRAINT fk_purl_status_status
+                    FOREIGN KEY (status_id) REFERENCES status(id);
+                ALTER TABLE product_status
+                    ADD CONSTRAINT fk_product_status_status
+                    FOREIGN KEY (status_id) REFERENCES status(id);
+                "#,
+            )
+            .await?;
+
+        // 3. Drop the enum columns and enum type
+        manager
+            .get_connection()
+            .execute_unprepared(
+                r#"
+                ALTER TABLE purl_status DROP COLUMN IF EXISTS status;
+                ALTER TABLE product_status DROP COLUMN IF EXISTS status;
+                DROP TYPE IF EXISTS status;
+                "#,
+            )
+            .await?;
+
+        Ok(())
     }
 }
