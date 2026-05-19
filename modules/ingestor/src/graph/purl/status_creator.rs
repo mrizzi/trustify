@@ -23,6 +23,10 @@ pub struct PurlStatusEntry {
 }
 
 /// Creator for batch insertion of PURL statuses
+///
+/// Follows the Creator pattern used by PurlCreator, CpeCreator, etc.
+/// Collects PURL status entries and creates them in batches to avoid
+/// N+1 query problems and race conditions.
 #[derive(Default)]
 pub struct PurlStatusCreator {
     entries: Vec<PurlStatusEntry>,
@@ -33,10 +37,12 @@ impl PurlStatusCreator {
         Self::default()
     }
 
+    /// Add a PURL status entry to be created
     pub fn add(&mut self, entry: PurlStatusEntry) {
         self.entries.push(entry);
     }
 
+    /// Create all collected PURL statuses in batches
     #[instrument(skip_all, fields(num = self.entries.len()), err(level=tracing::Level::INFO))]
     pub async fn create<C>(self, connection: &C) -> Result<(), Error>
     where

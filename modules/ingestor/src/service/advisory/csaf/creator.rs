@@ -7,6 +7,7 @@ use crate::{
             version::{Version, VersionInfo, VersionSpec},
         },
         cpe::CpeCreator,
+        db_context::parse_status,
         organization::creator::OrganizationCreator,
         product::ProductInformation,
         purl::creator::PurlCreator,
@@ -157,7 +158,7 @@ impl<'a> StatusCreator<'a> {
         }
 
         for product in product_statuses {
-            let status = crate::graph::db_context::parse_status(product.status)?;
+            let status = parse_status(product.status)?;
 
             // Organizations have been pre-ingested, just look up from cache
             let org_id = product
