@@ -263,13 +263,7 @@ impl<'a> StatusCreator<'a> {
                 {
                     let spec =
                         VersionSpec::Range(Version::Unbounded, Version::Exclusive(version.clone()));
-                    self.create_purl_status(
-                        &product,
-                        purl,
-                        scheme,
-                        spec,
-                        Status::Affected,
-                    );
+                    self.create_purl_status(&product, purl, scheme, spec, Status::Affected);
                 }
             }
         }

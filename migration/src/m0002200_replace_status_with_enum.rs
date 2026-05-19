@@ -53,6 +53,30 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
+        // 2b. Validate that all rows were migrated — fail early if orphaned status_id
+        //     references left NULL status_text values.
+        manager
+            .get_connection()
+            .execute_unprepared(
+                r#"
+                DO $$
+                DECLARE
+                    null_purl_count bigint;
+                    null_product_count bigint;
+                BEGIN
+                    SELECT count(*) INTO null_purl_count
+                    FROM purl_status WHERE status_text IS NULL;
+                    SELECT count(*) INTO null_product_count
+                    FROM product_status WHERE status_text IS NULL;
+                    IF null_purl_count > 0 OR null_product_count > 0 THEN
+                        RAISE EXCEPTION 'Migration blocked: % purl_status and % product_status rows have NULL status_text (orphaned status_id references)',
+                            null_purl_count, null_product_count;
+                    END IF;
+                END$$;
+                "#,
+            )
+            .await?;
+
         // 3. Drop the old status_id FK columns (removes FK constraints on the status table)
         manager
             .get_connection()

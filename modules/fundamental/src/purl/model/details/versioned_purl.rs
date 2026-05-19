@@ -10,9 +10,9 @@ use sea_orm::{
     ColumnTrait, ConnectionTrait, EntityTrait, LoaderTrait, ModelTrait, QueryFilter, QuerySelect,
     RelationTrait, prelude::Uuid,
 };
-use std::collections::HashMap;
 use sea_query::{Asterisk, Expr, Func, JoinType, SimpleExpr};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use trustify_common::{db::VersionMatches, memo::Memo};
 use trustify_entity::{
     advisory, base_purl, organization, purl_status, qualified_purl, remediation,
@@ -170,7 +170,6 @@ impl VersionedPurlStatus {
         remediations: &[remediation::Model],
         tx: &C,
     ) -> Result<Self, Error> {
-
         Ok(Self {
             vulnerability: VulnerabilityHead::from_vulnerability_entity(
                 vuln,
