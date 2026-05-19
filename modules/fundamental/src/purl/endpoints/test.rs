@@ -440,7 +440,7 @@ async fn get_recommendations_dedup(ctx: &TrustifyContext) -> Result<(), anyhow::
     Ok(())
 }
 
-/// Verifies that a non-default vulnerability status is reflected in the recommendation response.
+/// Verifies that overriding a vulnerability status to a different enum variant (Recommended) is reflected in the recommendation response.
 #[test_context(TrustifyContext)]
 #[test(actix_web::test)]
 async fn get_recommendations_other_status(ctx: &TrustifyContext) -> Result<(), anyhow::Error> {

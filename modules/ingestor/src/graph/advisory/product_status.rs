@@ -80,6 +80,8 @@ impl ProductStatus {
     }
 
     pub fn uuid(&self, advisory_id: Uuid, vulnerability_id: String) -> Uuid {
+        // Uses the status slug string for UUID computation. This differs from the pre-enum
+        // implementation which used the status UUID bytes. Re-ingestion normalizes existing rows.
         let mut result = Uuid::new_v5(&NAMESPACE, self.status.to_string().as_bytes());
         result = Uuid::new_v5(&result, self.product_version_range_id.as_bytes());
         result = Uuid::new_v5(&result, advisory_id.as_bytes());

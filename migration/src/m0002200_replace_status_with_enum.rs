@@ -4,6 +4,10 @@ use trustify_common::db::create_enum_if_not_exists;
 #[derive(DeriveMigrationName)]
 pub struct Migration;
 
+// Enum variants listed explicitly because the migration crate cannot depend on
+// trustify_entity::status::Status (would create a circular dependency).
+// Keep in sync with entity/src/status.rs — the serialization alignment test
+// in that file will catch any drift.
 #[derive(Clone, DeriveIden)]
 enum StatusEnum {
     #[sea_orm(iden = "status")]
