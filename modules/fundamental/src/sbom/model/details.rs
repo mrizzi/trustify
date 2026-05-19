@@ -19,6 +19,7 @@ use sea_query::{Asterisk, Expr, ExprTrait, Func, PgFunc, SimpleExpr};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, BTreeSet},
+    str::FromStr,
     sync::Arc,
 };
 use tracing::{Instrument, info_span, instrument};
@@ -26,7 +27,7 @@ use trustify_common::{db::VersionMatches, memo::Memo};
 use trustify_entity::{
     advisory, advisory_vulnerability, advisory_vulnerability_score, base_purl, cpe, organization,
     purl_status, qualified_purl, sbom, sbom_node, sbom_node_purl_ref, sbom_package,
-    source_document, version_range, versioned_purl, vulnerability,
+    source_document, status::Status, version_range, versioned_purl, vulnerability,
 };
 use utoipa::ToSchema;
 use uuid::Uuid;
@@ -42,7 +43,7 @@ struct IdSet {
     advisory_vulnerability_vulnerability_id: String,
     vulnerability_id: String,
     context_cpe_id: Option<Uuid>,
-    status: String,
+    status: Status,
     organization_id: Option<Uuid>,
 }
 
@@ -57,7 +58,8 @@ impl FromQueryResult for IdSet {
             advisory_vulnerability_vulnerability_id: res.try_get("", "av_vulnerability_id")?,
             vulnerability_id: res.try_get("", "vulnerability_id")?,
             context_cpe_id: res.try_get("", "cpe_id").ok(),
-            status: res.try_get("", "status")?,
+            status: Status::from_str(&res.try_get::<String>("", "status")?)
+                .map_err(|e| DbErr::Custom(e.to_string()))?,
             organization_id: res.try_get("", "organization_id").ok(),
         })
     }
@@ -415,7 +417,7 @@ impl SbomDetails {
                 advisory_vulnerability: Arc::clone(advisory_vulnerability),
                 vulnerability: Arc::clone(vulnerability),
                 context_cpe,
-                status: id_set.status.clone(),
+                status: id_set.status,
                 organization,
             });
         }
@@ -474,7 +476,7 @@ impl SbomAdvisory {
             };
 
             let sbom_status = if let Some(status) = advisory.status.iter_mut().find(|status| {
-                status.status == each.status
+                status.status == each.status.to_string()
                     && status.vulnerability.identifier == each.vulnerability.id
             }) {
                 status
@@ -482,7 +484,7 @@ impl SbomAdvisory {
                 let status = SbomStatus::new(
                     &each.advisory_vulnerability,
                     &each.vulnerability,
-                    each.status.clone(),
+                    each.status.to_string(),
                     status_cpe,
                     vec![],
                     // Look up pre-fetched scores from the map

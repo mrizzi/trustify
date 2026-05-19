@@ -28,8 +28,8 @@ use trustify_common::{
 use trustify_entity::{
     advisory, advisory_vulnerability_score, base_purl, cpe, license, organization, product,
     product_status, product_version, product_version_range, purl_status, qualified_purl, sbom,
-    sbom_license_expanded, sbom_node, sbom_node_purl_ref, sbom_package_license, version_range,
-    versioned_purl, vulnerability,
+    sbom_license_expanded, sbom_node, sbom_node_purl_ref, sbom_package_license, status::Status,
+    version_range, versioned_purl, vulnerability,
 };
 use trustify_module_ingestor::common::{Deprecation, DeprecationForExt};
 use utoipa::ToSchema;
@@ -279,7 +279,7 @@ impl PurlAdvisory {
             let purl_status = PurlStatus::new(
                 &product_status.vulnerability,
                 &product_status.advisory,
-                product_status.status_slug.clone(),
+                product_status.status.to_string(),
                 Some(VersionRange::from_entity(product_status.version_range)?),
                 Some(product_status.cpe.to_string()),
                 tx,
@@ -480,7 +480,7 @@ pub struct ProductStatusCatcher {
     advisory: advisory::Model,
     vulnerability: vulnerability::Model,
     cpe: trustify_entity::cpe::Model,
-    status_slug: String,
+    status: Status,
     version_range: version_range::Model,
 }
 
@@ -492,7 +492,7 @@ impl FromQueryResult for ProductStatusCatcher {
             advisory: Self::from_query_result_multi_model(res, "", advisory::Entity)?,
             vulnerability: Self::from_query_result_multi_model(res, "", vulnerability::Entity)?,
             cpe: Self::from_query_result_multi_model(res, "", trustify_entity::cpe::Entity)?,
-            status_slug: product_status_model.status.to_string(),
+            status: product_status_model.status,
             version_range: Self::from_query_result_multi_model(res, "", version_range::Entity)?,
         })
     }

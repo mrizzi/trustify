@@ -16,7 +16,7 @@ use std::collections::HashMap;
 use trustify_common::{db::VersionMatches, memo::Memo};
 use trustify_entity::{
     advisory, base_purl, organization, purl_status, qualified_purl, remediation,
-    remediation_purl_status, version_range, versioned_purl, vulnerability,
+    remediation_purl_status, status::Status, version_range, versioned_purl, vulnerability,
 };
 use utoipa::ToSchema;
 
@@ -128,11 +128,13 @@ impl VersionedPurlAdvisory {
             .zip(remediations.iter())
         {
             if let (Some(vulnerability), Some(advisory)) = (vuln, advisory) {
-                let status_slug = purl_status.status.to_string();
-
-                let qualified_package_status =
-                    VersionedPurlStatus::from_entity(vulnerability, status_slug, remediations, tx)
-                        .await?;
+                let qualified_package_status = VersionedPurlStatus::from_entity(
+                    vulnerability,
+                    purl_status.status,
+                    remediations,
+                    tx,
+                )
+                .await?;
 
                 if let Some(entry) = results.iter_mut().find(|e| e.head.uuid == advisory.id) {
                     entry.status.push(qualified_package_status)
@@ -166,7 +168,7 @@ pub struct VersionedPurlStatus {
 impl VersionedPurlStatus {
     pub async fn from_entity<C: ConnectionTrait>(
         vuln: &vulnerability::Model,
-        status: String,
+        status: Status,
         remediations: &[remediation::Model],
         tx: &C,
     ) -> Result<Self, Error> {
@@ -177,7 +179,7 @@ impl VersionedPurlStatus {
                 tx,
             )
             .await?,
-            status,
+            status: status.to_string(),
             remediations: RemediationSummary::from_entities(remediations),
         })
     }

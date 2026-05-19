@@ -36,7 +36,9 @@ use trustify_entity::{
     advisory, base_purl, license, purl_status,
     qualified_purl::{self, CanonicalPurl},
     remediation, remediation_purl_status, sbom_license_expanded, sbom_node, sbom_node_purl_ref,
-    sbom_package_license, version_range, versioned_purl, vulnerability,
+    sbom_package_license,
+    status::Status,
+    version_range, versioned_purl, vulnerability,
 };
 use trustify_module_ingestor::common::Deprecation;
 
@@ -51,7 +53,7 @@ struct PurlKey<'a> {
 /// Vulnerability status record linking a vulnerability ID to its VEX status and remediations.
 struct StatusInfo {
     vuln_id: String,
-    status_slug: String,
+    status: Status,
     remediations: Vec<remediation::Model>,
     /// The most recent date from the advisory that reported this status, used to pick the
     /// latest assessment when the same vulnerability appears in multiple advisories.
@@ -628,13 +630,12 @@ impl PurlService {
                 .zip(remediations)
             {
                 if let (Some(v), Some(advisory)) = (vuln, advisory) {
-                    let slug = ps.status.to_string();
                     statuses_by_base
                         .entry(ps.base_purl_id)
                         .or_default()
                         .push(StatusInfo {
                             vuln_id: v.id,
-                            status_slug: slug,
+                            status: ps.status,
                             remediations: rems,
                             advisory_date: advisory.modified.or(advisory.published),
                         });
@@ -683,13 +684,12 @@ impl PurlService {
             vulnerabilities: best_by_vuln
                 .into_values()
                 .map(|info| {
-                    let vex_status = match info.status_slug.as_str() {
-                        "affected" => VexStatus::Affected,
-                        "fixed" => VexStatus::Fixed,
-                        "not_affected" => VexStatus::NotAffected,
-                        "under_investigation" => VexStatus::UnderInvestigation,
-                        "recommended" => VexStatus::Recommended,
-                        other => VexStatus::Other(other.to_string()),
+                    let vex_status = match info.status {
+                        Status::Affected => VexStatus::Affected,
+                        Status::Fixed => VexStatus::Fixed,
+                        Status::NotAffected => VexStatus::NotAffected,
+                        Status::UnderInvestigation => VexStatus::UnderInvestigation,
+                        Status::Recommended => VexStatus::Recommended,
                     };
                     VulnerabilityStatus {
                         id: info.vuln_id.clone(),

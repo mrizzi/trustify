@@ -17,7 +17,7 @@ use sea_orm::{
 use sea_query::{ColumnType, Expr, JoinType, UnionType, extension::postgres::PgExpr};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{collections::HashMap, fmt::Debug, sync::Arc};
+use std::{collections::HashMap, fmt::Debug, str::FromStr, sync::Arc};
 use tracing::{Instrument, info_span, instrument};
 use trustify_common::{
     cpe::Cpe,
@@ -39,8 +39,9 @@ use trustify_entity::{
     license, organization, package_relates_to_package, qualified_purl,
     relationship::Relationship,
     sbom, sbom_ai, sbom_group_assignment, sbom_license_expanded, sbom_node, sbom_node_cpe_ref,
-    sbom_node_purl_ref, sbom_package, sbom_package_license, source_document, versioned_purl,
-    vulnerability,
+    sbom_node_purl_ref, sbom_package, sbom_package_license, source_document,
+    status::Status,
+    versioned_purl, vulnerability,
 };
 
 #[derive(Clone, Debug, Default)]
@@ -1051,7 +1052,7 @@ pub struct QueryCatcher {
     pub advisory_vulnerability: Arc<advisory_vulnerability::Model>,
     pub vulnerability: Arc<vulnerability::Model>,
     pub context_cpe: Option<Arc<cpe::Model>>,
-    pub status: String,
+    pub status: Status,
     pub organization: Option<Arc<organization::Model>>,
 }
 
@@ -1090,7 +1091,8 @@ impl FromQueryResult for QueryCatcher {
             )?),
             context_cpe: Self::from_query_result_multi_model_optional(res, "", cpe::Entity)?
                 .map(Arc::new),
-            status: res.try_get("", "status")?,
+            status: Status::from_str(&res.try_get::<String>("", "status")?)
+                .map_err(|e| DbErr::Custom(e.to_string()))?,
             organization: Self::from_query_result_multi_model_optional(
                 res,
                 "",
