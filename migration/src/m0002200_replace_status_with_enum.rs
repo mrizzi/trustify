@@ -145,7 +145,34 @@ impl MigrationTrait for Migration {
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        // 1. Recreate the status table and seed data
+        // 0. Save enum values to temporary text columns before dropping the enum.
+        manager
+            .get_connection()
+            .execute_unprepared(
+                r#"
+                ALTER TABLE purl_status ADD COLUMN IF NOT EXISTS status_text text;
+                ALTER TABLE product_status ADD COLUMN IF NOT EXISTS status_text text;
+                UPDATE purl_status SET status_text = status::text;
+                UPDATE product_status SET status_text = status::text;
+                "#,
+            )
+            .await?;
+
+        // 1. Drop enum columns and enum type — the enum type occupies the "status"
+        //    name in pg_type, which would conflict with the implicit composite type
+        //    created by the table in the next step.
+        manager
+            .get_connection()
+            .execute_unprepared(
+                r#"
+                ALTER TABLE purl_status DROP COLUMN IF EXISTS status;
+                ALTER TABLE product_status DROP COLUMN IF EXISTS status;
+                DROP TYPE IF EXISTS status;
+                "#,
+            )
+            .await?;
+
+        // 2. Recreate the status table and seed data
         manager
             .get_connection()
             .execute_unprepared(
@@ -169,7 +196,7 @@ impl MigrationTrait for Migration {
             )
             .await?;
 
-        // 2. Add status_id columns and populate from the enum via slug lookup
+        // 3. Add status_id columns, populate from saved text via slug lookup, clean up
         manager
             .get_connection()
             .execute_unprepared(
@@ -182,12 +209,12 @@ impl MigrationTrait for Migration {
                 UPDATE purl_status
                 SET status_id = s.id
                 FROM status s
-                WHERE s.slug = purl_status.status::text;
+                WHERE s.slug = purl_status.status_text;
 
                 UPDATE product_status
                 SET status_id = s.id
                 FROM status s
-                WHERE s.slug = product_status.status::text;
+                WHERE s.slug = product_status.status_text;
 
                 ALTER TABLE purl_status
                     ALTER COLUMN status_id SET NOT NULL;
@@ -195,23 +222,21 @@ impl MigrationTrait for Migration {
                     ALTER COLUMN status_id SET NOT NULL;
 
                 ALTER TABLE purl_status
-                    ADD CONSTRAINT fk_purl_status_status
+                    ADD CONSTRAINT package_status_status_id_fkey
                     FOREIGN KEY (status_id) REFERENCES status(id);
                 ALTER TABLE product_status
-                    ADD CONSTRAINT fk_product_status_status
+                    ADD CONSTRAINT product_status_status_id_fkey
                     FOREIGN KEY (status_id) REFERENCES status(id);
-                "#,
-            )
-            .await?;
 
-        // 3. Drop the enum columns and enum type
-        manager
-            .get_connection()
-            .execute_unprepared(
-                r#"
-                ALTER TABLE purl_status DROP COLUMN IF EXISTS status;
-                ALTER TABLE product_status DROP COLUMN IF EXISTS status;
-                DROP TYPE IF EXISTS status;
+                ALTER TABLE purl_status DROP COLUMN IF EXISTS status_text;
+                ALTER TABLE product_status DROP COLUMN IF EXISTS status_text;
+
+                CREATE INDEX IF NOT EXISTS package_status_idx
+                    ON purl_status USING btree (base_purl_id, advisory_id, status_id);
+                CREATE INDEX IF NOT EXISTS purl_status_combo_idx
+                    ON purl_status USING btree (base_purl_id, advisory_id, vulnerability_id, status_id, context_cpe_id);
+                CREATE INDEX IF NOT EXISTS product_status_idx
+                    ON product_status USING btree (context_cpe_id, status_id, package, vulnerability_id);
                 "#,
             )
             .await?;
