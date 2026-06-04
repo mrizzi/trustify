@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1778587510723,
+  "lastUpdate": 1780577561753,
   "repoUrl": "https://github.com/mrizzi/trustify",
   "entries": {
     "Benchmark": [
@@ -18152,6 +18152,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Ingest DS3",
             "value": 10,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ctron@dentrassi.de",
+            "name": "Jens Reimann",
+            "username": "ctron"
+          },
+          "committer": {
+            "email": "ctron@dentrassi.de",
+            "name": "Jens Reimann",
+            "username": "ctron"
+          },
+          "distinct": true,
+          "id": "49f0af274001ca91c1f930c8d5954175955c5680",
+          "message": "chore: document env-vars for data migration\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-06-03T13:48:00Z",
+          "tree_id": "5a4b92b61b0b3f0226ed8c3a2213e094efa85dbc",
+          "url": "https://github.com/mrizzi/trustify/commit/49f0af274001ca91c1f930c8d5954175955c5680"
+        },
+        "date": 1780577560050,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 9,
             "unit": "s"
           }
         ]
