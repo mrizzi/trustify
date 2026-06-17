@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1780577561753,
+  "lastUpdate": 1781699334129,
   "repoUrl": "https://github.com/mrizzi/trustify",
   "entries": {
     "Benchmark": [
@@ -18176,6 +18176,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/mrizzi/trustify/commit/49f0af274001ca91c1f930c8d5954175955c5680"
         },
         "date": 1780577560050,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 9,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "mdessi@redhat.com",
+            "name": "desmax74",
+            "username": "desmax74"
+          },
+          "committer": {
+            "email": "desmax74@users.noreply.github.com",
+            "name": "Massimiliano Dessì - (Fast Chauffeur)",
+            "username": "desmax74"
+          },
+          "distinct": true,
+          "id": "628aca46b7893fd206d843d527914f001c166344",
+          "message": "Refactor to centralize configuration\n\nSigned-off-by: desmax74 <mdessi@redhat.com>",
+          "timestamp": "2026-06-15T14:25:52Z",
+          "tree_id": "f3ae31cf01069b51b39666196ea461b204ac2037",
+          "url": "https://github.com/mrizzi/trustify/commit/628aca46b7893fd206d843d527914f001c166344"
+        },
+        "date": 1781699332790,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
