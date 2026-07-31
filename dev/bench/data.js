@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1785406777203,
+  "lastUpdate": 1785486454254,
   "repoUrl": "https://github.com/mrizzi/trustify",
   "entries": {
     "Benchmark": [
@@ -18321,6 +18321,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/mrizzi/trustify/commit/9d15ed2b835df2c28d1eddec6c3507d56011b992"
         },
         "date": 1785406774885,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 9,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "noah@santschi-cooney.ch",
+            "name": "Noah Santschi-Cooney",
+            "username": "Strum355"
+          },
+          "committer": {
+            "email": "noah@santschi-cooney.ch",
+            "name": "Noah S-C",
+            "username": "Strum355"
+          },
+          "distinct": true,
+          "id": "7c954a05def592922e318efa0a5d2177f1cc187c",
+          "message": "fix: request 'openid' scope in client_credentials token requests",
+          "timestamp": "2026-07-30T15:05:50Z",
+          "tree_id": "b26d550b34ab1edd6959dff3845cf7bdbb87c106",
+          "url": "https://github.com/mrizzi/trustify/commit/7c954a05def592922e318efa0a5d2177f1cc187c"
+        },
+        "date": 1785486452710,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
