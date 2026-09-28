@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790340831887,
+  "lastUpdate": 1790606776141,
   "repoUrl": "https://github.com/mrizzi/trustify",
   "entries": {
     "Benchmark": [
@@ -18442,6 +18442,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Ingest DS3",
             "value": 10,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jfuller@redhat.com",
+            "name": "rh-jfuller",
+            "username": "rh-jfuller"
+          },
+          "committer": {
+            "email": "jfuller@redhat.com",
+            "name": "James Fuller",
+            "username": "rh-jfuller"
+          },
+          "distinct": true,
+          "id": "29a314770032cd3b837f184709c459fd5394a730",
+          "message": "ci: add experimental nightly builds from main",
+          "timestamp": "2026-09-26T10:32:29+02:00",
+          "tree_id": "49119fa5d31d95e4542f684fd2752f2c9bcc0e3c",
+          "url": "https://github.com/mrizzi/trustify/commit/29a314770032cd3b837f184709c459fd5394a730"
+        },
+        "date": 1790606773575,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 9,
             "unit": "s"
           }
         ]
