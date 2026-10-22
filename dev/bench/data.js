@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1792661394251,
+  "lastUpdate": 1792688839387,
   "repoUrl": "https://github.com/mrizzi/trustify",
   "entries": {
     "Benchmark": [
@@ -18500,6 +18500,35 @@ window.BENCHMARK_DATA = {
           {
             "name": "Ingest DS3",
             "value": 7,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ctron@dentrassi.de",
+            "name": "Jens Reimann",
+            "username": "ctron"
+          },
+          "committer": {
+            "email": "ctron@dentrassi.de",
+            "name": "Jens Reimann",
+            "username": "ctron"
+          },
+          "distinct": true,
+          "id": "38d6fa40752bbe3c1d91d3d42f8fc7f67c0fbe1c",
+          "message": "fix(deps): upgrade embedded PostgreSQL crates to 0.22\n\nSigned-off-by: Jens Reimann <ctron@dentrassi.de>",
+          "timestamp": "2026-10-22T15:42:36+02:00",
+          "tree_id": "eca96f7be3059a9e800afcd244c5edba59f7d09c",
+          "url": "https://github.com/mrizzi/trustify/commit/38d6fa40752bbe3c1d91d3d42f8fc7f67c0fbe1c"
+        },
+        "date": 1792688838138,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 6,
             "unit": "s"
           }
         ]
