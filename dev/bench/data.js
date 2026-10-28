@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1792768832435,
+  "lastUpdate": 1793211875380,
   "repoUrl": "https://github.com/mrizzi/trustify",
   "entries": {
     "Benchmark": [
@@ -18553,6 +18553,35 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/mrizzi/trustify/commit/eb4c5dbfe2b0da1091fe241711d79c95d5dfee60"
         },
         "date": 1792768830120,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Ingest DS3",
+            "value": 7,
+            "unit": "s"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "00hf11@gmail.com",
+            "name": "Helio Frota",
+            "username": "helio-frota"
+          },
+          "committer": {
+            "email": "00hf11@gmail.com",
+            "name": "Helio Frota",
+            "username": "helio-frota"
+          },
+          "distinct": true,
+          "id": "56b3611589d4d272af0587889a7605353d2e35b8",
+          "message": "build: update from node 22 to node 24",
+          "timestamp": "2026-10-28T16:08:09Z",
+          "tree_id": "8a91d9fc782671ee679f1c62470c3acecadf1747",
+          "url": "https://github.com/mrizzi/trustify/commit/56b3611589d4d272af0587889a7605353d2e35b8"
+        },
+        "date": 1793211865055,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
